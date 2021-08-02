@@ -1,5 +1,7 @@
 open Printf
 
+module D = Dlpag
+
 (* type iformula = CallF of bool * string | Base of bool | ListF of (Ast.T.foperator * iformula list) | Modal of (bool * iprogram * iformula) (*| Not of iformula*)
 
 and iprogram  = Assign of (string * iformula) | Test of iformula | ListP of (Ast.T.poperator * iprogram list) | LE of (int * iprogram) *)
@@ -105,7 +107,7 @@ let ptoFormu v f b p = Formu(v, MCTSutils.Modal(b, p, f))
 let rec splitF v f = ( match f with 
     | MCTSutils.CallF (b, s) -> Proven ( let x = (MCTSutils.SS.mem s v) in if b then x else not x)
     | MCTSutils.Base b ->  Proven b
-    | MCTSutils.ListF(op, l) -> Noeud(false, (match op with Ast.T.Conj -> And | Ast.T.Disj -> Or), List.map (toFormu v) l, statInit)
+    | MCTSutils.ListF(op, l) -> Noeud(false, (match op with D.Ast.T.Conj -> And | D.Ast.T.Disj -> Or), List.map (toFormu v) l, statInit)
     | MCTSutils.Modal(b, p, f) -> (match p with
       | MCTSutils.Assign(s, fa) -> let vs = MCTSutils.SS.add s v and vns = MCTSutils.SS.remove s v in 
       let ndouble = splitF v fa in 
@@ -122,12 +124,12 @@ let rec splitF v f = ( match f with
         let _ = hashIntToNode hin idouble ndouble in 
         Noeud(false, Or, [PNoeud iand1; PNoeud iand2], statInit)
       | MCTSutils.Test fp -> Noeud(false, And, [Formu(v, fp); Formu(v, f)], statInit)
-      | MCTSutils.ListP(Ast.T.Seq, l) ->(match l with 
+      | MCTSutils.ListP(D.Ast.T.Seq, l) ->(match l with 
         | [] -> Noeud(false, And, [Formu(v, f)], statInit)
         | [h] -> Noeud(false, And, [(Formu(v, MCTSutils.Modal(b, h, f)))], statInit)
-        | h::t -> Noeud(false, And, [Formu(v, MCTSutils.Modal(b, h, MCTSutils.Modal(b, MCTSutils.ListP(Ast.T.Seq, t), f)))], statInit)
+        | h::t -> Noeud(false, And, [Formu(v, MCTSutils.Modal(b, h, MCTSutils.Modal(b, MCTSutils.ListP(D.Ast.T.Seq, t), f)))], statInit)
       )
-      | MCTSutils.ListP(Ast.T.U, l) -> Noeud(false, bDiff b, List.map (ptoFormu v f b) l, statInit)
+      | MCTSutils.ListP(D.Ast.T.U, l) -> Noeud(false, bDiff b, List.map (ptoFormu v f b) l, statInit)
       | MCTSutils.LE(n, p) -> ( match n with
         |0 -> Noeud(false, And, [Formu(v, f)], statInit)
         |1 -> Noeud(false, bDiff b, [Formu(v, f); Formu(v, (MCTSutils.Modal(b, p, f)))], statInit)

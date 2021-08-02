@@ -1,5 +1,6 @@
 open Printf
-open Dlpag
+module D = Dlpag
+open Mctsdlpag
 
 let update reference value = reference := value
 let get () =
@@ -19,17 +20,17 @@ let time f x =
 let start () =
   let _ = Random.self_init() in 
   let f = get () in
-  let p = Parse.from_file () f in
+  let p = D.Parse.from_file () f in
   (*printf "%s\n\n" (Ast.Print.file p);*)
-  let g = Circuit.file p in
-  let f = Formula.file g in
+  let g = D.Circuit.file p in
+  let f = D.Formula.file g in
   let fi = MCTSutils.formToIForm f in 
   let tree = MCTSutils.splitIF (MCTSutils.SS.empty) fi in
-  let _= printf "\nInput formula : %s \n" (Formula.Print.formula f) in 
+  let _= printf "\nInput formula : %s \n" (D.Formula.Print.formula f) in 
   let _= printf "it has %d variables.\n\n" (MCTSutils.acountF f) in
   let _= printf "Internal formula : %s \n" (MCTSutils.Print.iformula fi) in 
   let _= printf "After one split : \n%s\nPlaythrough now\n\n" (MCTSutils.Print.arbre tree) in
-  let babdallah, tabdallah = time (Solve.model_checking g) [] in
+  let babdallah, tabdallah = time (D.Solve.model_checking g) [] in
   let bbrute, tbrute = if true then time (MCTSutils.playthrough tree false) 0 else true,0. in
   let nodecount = (* MCTSutils.playthroughcount tree 0 *) 0  in (* very slow *)
   let _,y = if true then MCTSutils.playthroughc tree else false,0 in
