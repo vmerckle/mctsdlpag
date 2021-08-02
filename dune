@@ -1,0 +1,12 @@
+(executable
+ (name Dlpag)
+ (public_name dlpag)
+(modules dlpag)
+ (libraries dlpag))
+
+
+(executable
+ (name Main2)
+ (public_name mydlpag)
+(modules Main2)
+ (libraries dlpag))
