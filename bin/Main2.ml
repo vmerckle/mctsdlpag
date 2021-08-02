@@ -33,12 +33,12 @@ let start () =
   let bbrute, tbrute = if true then time (MCTSutils.playthrough tree false) 0 else true,0. in
   let nodecount = (* MCTSutils.playthroughcount tree 0 *) 0  in (* very slow *)
   let _,y = if true then MCTSutils.playthroughc tree else false,0 in
-  let nfuck = 2000000 in
-  let (bdag, dcount), tdag = time (Vache.solve fi) nfuck in let _= match bdag with
+  let  nn = 2000000 in
+  let (bdag, dcount), tdag = time (Vache.solve fi) nn in let _= match bdag with
     MCTSutils.Proven b -> printf "\n%B : DAG. in %d steps\n" b dcount
   | MCTSutils.Ni -> printf " \nNo answer : DAG. in %d steps\n" dcount
   in 
-  let (bmcts,count), tmcts = time (MCTS.solve fi) 0 in let _= match bmcts with
+  let (bmcts,count), tmcts = time (MCTS.solve fi) nn in let _= match bmcts with
     MCTSutils.Proven b -> printf "%B : MCTS. in %d steps\n" b count
   | MCTSutils.Ni -> printf " No answer : MCTS. in %d steps\n" count
   in
