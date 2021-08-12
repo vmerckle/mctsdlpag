@@ -1,11 +1,12 @@
-# Setup
+# Dependency
 
-git clone https://github.com/AbdallahS/dlpag
+DL-PA Parser&Grounder https://github.com/AbdallahS/dlpag
 
-copy this git's content over
+# Usage
 
-make mydlpag
+    dune exec mydlpag [file]
 
-# usage
+Or
 
-dune exec mydlpag [file]
+    dune install
+    mctsdlpag [file]
