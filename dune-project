@@ -1,7 +1,8 @@
-(lang dune 2.9)
+(lang dune 2.8)
+
 (package
  (name mctsdlpag)
- (synopsis "Victor's stuff.")
+ (synopsis "DL-PA MCTS solver")
  (description "\| blabla
               "\| bloblo
 ))
