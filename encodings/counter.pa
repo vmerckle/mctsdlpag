@@ -1,0 +1,17 @@
+grounding:
+size := {1..60}.
+
+formula:
+
+psi := <ini><count \star> val(60).
+
+program:
+ini := val(0) <- \top.
+count := \bigcup I \in size : countto(I).
+\forall I \in size : countto(I) := ?val(I-1)? \seq val(I-1) <- \bot \seq val(I) <- \top.
+
+main:
+psi.
+
+% expected : true
+

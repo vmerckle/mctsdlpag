@@ -1,0 +1,10 @@
+grounding:
+
+formula:
+psi := <init> ((a \or b) \and (a \or c) \and (b \or (b \or (b \or x))) \and (a \or b) \and (f \or c) \and (a \or d)).
+
+program:
+init := a <- \top \seq c <- \top.
+
+main:
+psi.

@@ -1,0 +1,15 @@
+grounding:
+
+formula:
+counter(0) := \top.
+\forall I \in {1..10} : counter(I) := counter(I-1)
+
+psi := <count> val(10).
+
+program:
+count := a(1) <- \top.
+
+main:
+psi.
+
+% expected : true

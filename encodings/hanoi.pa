@@ -1,0 +1,37 @@
+grounding:
+stack := { 1..3 }.
+stacksize := { 1..3 }.
+
+
+formula:
+\forall S \in stack : stackthere(S) := \bigand SS \in stacksize : disk(S, SS).
+\forall S \in stack : stackNothere(S) := \bigand SS \in stacksize : \neg disk(S, SS).
+wins := \bigand Sn \in {1..2} : stackNothere(Sn) \and stackthere(3).
+psi := <inistack(1) \seq playsome \star>wins.
+%%\forall S \in stack, SS \in stacksize : isBiggest(S, SS) := \bigor X \in {SS..2} disk(S, x).
+\forall S \in stack: isBiggest(S, 1) := \top.
+\forall S \in stack: isBiggest(S, 2) := \bigand X \in {1..1} : \neg disk(S, X).
+\forall S \in stack: isBiggest(S, 3) := \bigand X \in {1..2} : \neg disk(S, X).
+\forall S \in stack: isBiggest(S, 4) := \bigand X \in {1..3} : \neg disk(S, X).
+\forall S \in stack: isBiggest(S, 5) := \bigand X \in {1..4} : \neg disk(S, X).
+\forall S \in stack: isBiggest(S, 6) := \bigand X \in {1..5} : \neg disk(S, X).
+\forall S \in stack: isBiggest(S, 7) := \bigand X \in {1..6} : \neg disk(S, X).
+\forall S \in stack: isBiggest(S, 8) := \bigand X \in {1..7} : \neg disk(S, X).
+\forall S \in stack: isBiggest(S, 9) := \bigand X \in {1..8} : \neg disk(S, X).
+\forall S \in stack: isBiggest(S, 10) := \bigand X \in {1..9} : \neg disk(S, X).
+\forall S \in stack: isBiggest(S, 11) := \bigand X \in {1..10} : \neg disk(S, X).
+\forall S \in stack: isBiggest(S, 12) := \bigand X \in {1..11} : \neg disk(S, X).
+\forall S \in stack: isBiggest(S, 13) := \bigand X \in {1..12} : \neg disk(S, X).
+\forall S \in stack: isBiggest(S, 14) := \bigand X \in {1..13} : \neg disk(S, X).
+\forall S \in stack: isBiggest(S, 15) := \bigand X \in {1..14} : \neg disk(S, X).
+\forall S \in stack: isBiggest(S, 16) := \bigand X \in {1..15} : \neg disk(S, X).
+\forall Sa \in stack, Sb \in stack, SS \in stacksize : playable(Sa, Sb, SS) := disk(Sa, SS) \and (\neg disk(Sb, SS)) \and isBiggest(Sa, SS) \and isBiggest(Sb, SS).
+
+program:
+\forall Sa \in stack, Sb \in stack, SS \in stacksize : play(Sa, Sb, SS) := ?playable(Sa, Sb, SS)? \seq disk(Sa, SS) <- \bot \seq disk(Sb, SS) <- \top.
+\forall S \in stack : inistack(S) := \bigseq SS \in stacksize : disk(S, SS) <- \top.
+playsome := \bigcup Sa \in stack, Sb \in stack, SS \in stacksize : play(Sa, Sb, SS).
+
+main:
+psi.
+

@@ -1,0 +1,9 @@
+grounding:
+
+formula:
+psi := <(a <- \top) \star>a.
+
+program:
+
+main:
+psi.
