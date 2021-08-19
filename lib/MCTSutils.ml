@@ -4,6 +4,7 @@ module D = Dlpag
 
 module CSet = Set.Make (struct type t = D.Circuit.T.callable let compare = compare end)
 module SS = Set.Make (struct type t = string let compare = compare end)
+
 exception Not_implem of string
 
 type iformula = CallF of bool * string | Base of bool | ListF of (D.Ast.T.foperator * iformula list) | Modal of (bool * iprogram * iformula) (*| Not of iformula*)
@@ -134,7 +135,7 @@ let rec formToIForm (f:D.Formula.formula) : iformula = match f with
         | [h] -> Modal(b, progToIProg h, fi)
         | h::t -> Modal(b, progToIProg h, formToIForm (D.Formula.Modal(b, ListP(D.Ast.T.Seq, t), f)))
       )
-    | _ -> let _=eprintf"still\n" in Modal(b, progToIProg p, fi)
+    | _ -> Modal(b, progToIProg p, fi)
 
 and progToIProg (p:D.Formula.program) : iprogram = match p with
   | D.Formula.Assign(a, psi) -> Assign(D.Circuit.Print.callable a, formToIForm psi)
@@ -175,6 +176,7 @@ let kek n st = let rec aux n s = match n with
         | n -> aux (n-1) (s^st)
 in aux n ""
 
+(* depth first naive solver *)
 let rec playthrough t b n = 
   let _= if b then eprintf "%s%s {\n" (kek n "---- ") (Print.arbre t) in 
   let x =
@@ -191,6 +193,7 @@ let rec playthrough t b n =
    in
   let _= if b then eprintf "%s} %b \n" (kek n "     ") x  in x
 
+(* count nodes slow version*)
 let rec playthroughc t = 
   match t with
   | Feuille(Direct b) -> b,1
@@ -205,6 +208,7 @@ let rec playthroughc t =
 
 
 
+(* count ... something ?nodes terminal version*)
 let rec playthroughcount t c = 
   match t with
   | Feuille(Direct _) -> c+1
@@ -215,3 +219,8 @@ let rec playthroughcount t c =
     | h::t ->  match op with
         | And|Or -> playthroughcount h (playthroughcount (Noeud(Ni, t, op, s)) (c+1))
         | Not -> playthroughcount h (c+1)
+
+let solve f verbose n =
+  let fi = formToIForm f in
+  let tree = splitIF (SS.empty) fi in
+  playthrough tree verbose n

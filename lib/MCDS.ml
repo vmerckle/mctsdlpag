@@ -297,7 +297,7 @@ let debugHash content =
       let _=eprintf "            Hashtable int -> dagnoeud : %d entries\n" (Hashtbl.length hin) in
       let _= if content then eprintf "%s" (Print.hashish hin string_of_int Print.dagnoeud) in ()
 
-let solve f (n : int) =
+let solve_fi f (n : int) =
   let v = MCTSutils.SS.empty in (* start valuation *)
   let rooti = expand v f in  (*(v, f) -> 0 -> root Node *)
   try
@@ -319,4 +319,9 @@ let solve f (n : int) =
                     | _ -> raise (Unexpected ("can't be formula now") )) in
                updatePath path res
     done ; (MCTSutils.Ni,n)
-  with Found (x,i) -> let _= debugHash false in x,i
+  with Found (x,i) -> 
+    let _= debugHash false in x,i
+
+let solve f n =
+  let fi = MCTSutils.formToIForm f in
+  solve_fi fi n

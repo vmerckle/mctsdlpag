@@ -107,7 +107,7 @@ let updatenode x res b = match x with
   Noeud(_, l, op, s) -> Noeud(b, l, op, {n=s.n+1; nwin=s.nwin + (if res then 1 else 0); ntoprove=s.ntoprove})
   |y -> y
 
-let solve f n =
+let solve_fi f n =
   let t = ref (splitIF (SS.empty) f )in
   try
     for i=0 to n do
@@ -131,3 +131,7 @@ let solve f n =
     done ; (Ni,n)
   with Found (x,i) -> x,i
   
+let solve df n =
+  let f = MCTSutils.formToIForm df in
+  let tree = MCTSutils.splitIF (MCTSutils.SS.empty) f in
+  solve_fi f n
