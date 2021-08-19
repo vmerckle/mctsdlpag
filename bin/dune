@@ -1,5 +1,6 @@
 (executable
- (name Main2)
+ (name Main)
  (public_name mctsdlpag)
- (modules Main2)
+ (modules Main)
+(ocamlopt_flags -O3)
  (libraries mctsdlpag dlpag))

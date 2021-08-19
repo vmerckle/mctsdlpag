@@ -41,7 +41,7 @@ let rec depth_first_single v f =
       | ListP(_, []) -> depth_first_single v phi
       | ListP(Seq, p::lp) -> depth_first_single v (Modal(diam, p, Modal(diam, ListP(Seq, lp), phi)))
       | ListP(U, p::lp) -> (
-        (*let p, lp = Helper.random_pop (p,lp) in*)
+        let p, lp = Helper.random_pop (p,lp) in
         let res = depth_first_single v (Modal(diam, p, phi)) in
         if diam then
           if res then res else depth_first_single v (Modal(diam, ListP(U, lp), phi))
@@ -104,18 +104,18 @@ and apply_kleene (svals:SSS.t) (sv:SSS.t) p =
 
   (* solve {a} |= <p*>phi (or [p*]phi) *)
 and apply_kleene_check_single diam v p phi : bool =
-  apply_kleene_check (SSS.singleton v) (SSS.singleton v) p diam phi
+  apply_kleene_check SSS.empty (SSS.singleton v) p diam phi
   (* solve {{a}, {b}} |= <p*>phi (or [p*]phi) *)
-and apply_kleene_check (svals:SSS.t) (sv:SSS.t) p diam phi :bool = 
-  (*let _ = eprintf "Star-Solving (%d) %s |= %s\nPast valuations : %s\n" (SSS.cardinal sv) (Formula.Print.sss sv) (Formula.Print.formula (Modal(diam, p, phi))) (Formula.Print.sss svals) in*)
-  let _ = eprintf "Star-Solving (%d)\n" (SSS.cardinal sv) in
-  let new_sv = apply_program sv p in
-  let phitrue = kleene_step diam new_sv phi in
+and apply_kleene_check (already_checked_vals:SSS.t) (to_check_vals:SSS.t) p diam phi :bool = 
+  let new_already_checked_vals = SSS.union already_checked_vals to_check_vals in
+  let new_vals = apply_program to_check_vals p in
+  let real_new_vals = SSS.diff new_vals already_checked_vals in
+  let phitrue = kleene_step diam real_new_vals phi in
   if (phitrue && diam) || (not phitrue && not diam) then phitrue
   else (
-    let added_something, new_svals = aware_union svals new_sv in
-    if added_something then
-      apply_kleene_check new_svals new_sv p diam phi
+    if SSS.cardinal real_new_vals > 0 then
+      let new_already_checked_vals = SSS.union new_already_checked_vals real_new_vals in
+      apply_kleene_check new_already_checked_vals real_new_vals p diam phi
     else
      false
   )

@@ -1,13 +1,13 @@
-all: mydlpag
+all: main
 
-.PHONY: clean mydlpag
+.PHONY: clean main install test uninstall
 
-clean:
-	rm -f *~ -r __pycache__
-	dune clean
+main:
+	dune build bin/Main.exe
 
-mydlpag:
-	dune build bin/Main2.exe
+run:
+	make install
+	mctsdlpag encodings/stupid.pa
 
 install:
 	dune build @install
@@ -18,3 +18,6 @@ test:
 
 uninstall:
 	dune uninstall
+
+clean:
+	dune clean
