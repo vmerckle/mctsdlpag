@@ -1,0 +1,9 @@
+grounding:
+
+formula:
+psi := <((a <- \top \cup a <- \bot) \seq (b <- \top \cup d <- \top)) \star> (d \and a).
+
+program:
+
+main:
+psi.

@@ -1,0 +1,10 @@
+grounding:
+
+formula:
+psi := <step \star> (a \and b \and c).
+
+program:
+step := a <- \top \cup b <- \top \cup c <- \top \cup a <- \top.
+
+main:
+psi.

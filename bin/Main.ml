@@ -69,11 +69,18 @@ let start_simple () =
   let _ = Random.self_init() in
   let dcircuit, (old_f:Dlpag.Formula.formula) = get_formula () in
   let new_f = Formula.formula_retread old_f in
-
   (*let _= printf "New print :\n%s\n\n" (Formula.Print.formula new_f) in*)
+  let fsize = Helper.size new_f in
+  let _ = printf "Formula' size: %d\n" fsize in
+  (* let _ = printf "Variable used : %s\n" (Formula.Print.ss (Helper.variables_in_f new_f)) in *)
   let res_simple, time_simple = time Simple.solve new_f in 
-  let _= printf "Simple : %s in %fs\n" (print_bool_option res_simple) time_simple in
   let babdallah, tabdallah = time (D.Solve.model_checking dcircuit) [] in
+  let treeN = 100000 in
+  let (res_mctsv1,_), time_mctsv1 = time (MCTS.solve old_f) treeN in 
+  let (res_mcdsv1, _), time_mcdsv1 = time (MCDS.solve old_f) treeN in 
+  let _= printf "MCTSv1 : %s in %fs\n" (print_bool_option res_mctsv1) time_mctsv1 in
+  let _= printf "MCDSv1 : %s in %fs\n" (print_bool_option res_mcdsv1) time_mcdsv1 in
+  let _= printf "Simple : %s in %fs\n" (print_bool_option res_simple) time_simple in
   let _ = printf "Abdallah' solver : %B in %fs\n" babdallah tabdallah in
   ()
 

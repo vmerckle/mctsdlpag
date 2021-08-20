@@ -1,7 +1,7 @@
 grounding:
 
 formula:
-psi := <(a <- \top) \star>a.
+psi := <((a <- \top) \cup (?a? \seq b <- \top))\star>b.
 
 program:
 
