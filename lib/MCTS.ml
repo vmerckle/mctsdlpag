@@ -121,7 +121,7 @@ let solve_fi f n =
         let b = isProven newp in
         let res = match b with
         | Proven b -> b
-        | Ni -> playout newp
+        | Ni -> playout newp (* disabling random playouts -> 50% speedup ~ *)
         in
         let newps = updatenode newp res b in
         (*let _= eprintf "newp = %s, res = %b\n" (Print.arbre newp) res in 
@@ -133,5 +133,5 @@ let solve_fi f n =
   
 let solve df n =
   let f = MCTSutils.formToIForm df in
-  let tree = MCTSutils.splitIF (MCTSutils.SS.empty) f in
-  solve_fi f n
+  (*let tree = MCTSutils.splitIF (MCTSutils.SS.empty) f in*)
+  let bdag, nodecount = solve_fi f n in MCTSutils.toOption bdag, nodecount

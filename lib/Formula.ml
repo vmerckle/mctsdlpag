@@ -3,6 +3,7 @@ let _ = ignore (sprintf "")
 
 module D = Dlpag
 
+(* naming decided by type, SS = string set, SSS = string set set, not great if we might change data structure *)
 module SS = Set.Make (struct type t = string let compare = compare end)
 module SSS = Set.Make (struct type t = SS.t let compare = SS.compare end)
 

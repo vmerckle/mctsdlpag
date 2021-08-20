@@ -155,7 +155,7 @@ let uCB ntotal n nwin =
 let calcUCB op n stat = 
   match op with
     | Or | Not|And -> uCB n stat.n stat.nwin
-    | And -> uCB n stat.n (stat.n - stat.nwin) (*we focus on finding a false*)
+    (*| And -> uCB n stat.n (stat.n - stat.nwin) *)(*we focus on finding a false*)
 
 type scoreR = Unexplored | Score of float | Solved of bool
 
@@ -275,7 +275,7 @@ let rec playoutdag dag = match dag with
       | PNoeud i -> playout (getNode i)
 and playout dagnoeud = match dagnoeud with
   Proven b -> b
-      | Noeud(x, op, l, y) -> match op with
+      | Noeud(_, op, l, _) -> match op with
           Not -> not (playoutdag (List.hd l))
         | And -> playoutdag (chooseone l) (*(match l with [] -> true | h::t -> playoutdag h && playout (Noeud(x, op, t, y)))*)
         | Or -> playoutdag (chooseone l)
@@ -320,8 +320,9 @@ let solve_fi f (n : int) =
                updatePath path res
     done ; (MCTSutils.Ni,n)
   with Found (x,i) -> 
-    let _= debugHash false in x,i
+    (*let _= debugHash false in *)
+  x,i
 
 let solve f n =
   let fi = MCTSutils.formToIForm f in
-  solve_fi fi n
+  let res, nc = solve_fi fi n in MCTSutils.toOption res, nc

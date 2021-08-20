@@ -27,6 +27,60 @@ let random_pop (x,l) =
   let n = Random.int (List.length l) in
   List.nth l n, remove_nth l n
 
-(* Look through the formula for top&bot and update ? *)
-let xxupdate = ()
+(* fast approximate size *)
+let size (f:Formula.formula) = let rec aux acc = function
+    | Base _ | Var _ -> 1+acc
+    | ListF(_, []) -> 0
+    | ListF(_, [f]) -> aux acc f
+    | ListF(fop, f::lf) -> aux ((aux 0 f)+acc+1) (ListF(fop, lf))
+    | Modal(_, p, phi) -> let s = aux acc phi in
+      begin 
+      match p with
+        | Assign(_, f) -> 2 * (aux 2 f) + s
+        | Test f -> aux 1 f + s
+        | ListP(_, []) -> s
+        | ListP(_, [p]) -> aux acc (Modal(true, p, phi))
+        | ListP(Seq, p::lp) -> aux 0 (Modal(true, p, phi)) + aux acc (Modal(true, ListP(Seq, lp), Base true))
+        | ListP(U, p::lp) -> acc + s * (aux 0 (Modal(true, p, Base true))) + aux 0 (Modal(true, (ListP(U, lp)), phi))
+        | Kleene p -> acc + 50*s* (aux 0 (Modal(true, p, phi)))
+      end
+  in aux 0 f
 
+(* how deeply undeterministic our formula is *)
+(* compute worst case number of valuation? *) (* TODO redo this, it's wrong *)
+let udeter_depth(f:Formula.formula) = let rec aux acc = function
+    | Base _ | Var _ -> 0
+    | ListF(_, []) -> 0
+    | ListF(_, [f]) -> aux acc f
+    | ListF(fop, f::lf) -> aux ((aux 0 f)+acc) (ListF(fop, lf))
+    | Modal(_, p, phi) -> let s = aux 0 phi in
+      begin 
+      match p with
+        | Assign(_, f) | Test f -> acc * max (aux 0 f) s
+        | ListP(_, []) -> acc * s
+        | ListP(U, [p]) -> aux acc (Modal(true, p, phi))
+        | ListP(Seq, p::lp) -> (aux 0 (Modal(true, p, phi))) + (aux acc (Modal(true, ListP(Seq, lp), Base true)))
+        | ListP(U, p::lp) -> acc * (aux 0 (Modal(true, p, phi))) + acc *(aux 0 (Modal(true, ListP(Seq, lp), Base true)))
+        | Kleene p -> acc + 50*s* (aux 0 (Modal(true, p, phi)))
+      end
+  in aux 0 f
+
+(* return the set of variables used in f *)
+let variables_in_f f = let rec aux sacc = function
+    | Base _ -> sacc
+    | Var (_, s) -> SS.add s sacc
+    | ListF(_, []) -> sacc
+    | ListF(_, [f]) -> aux sacc f
+    | ListF(fop, f::lf) ->aux (aux sacc f) (ListF(fop, lf))
+    | Modal(_, p, phi) -> aux (auxp sacc p) phi
+  and auxp sacc = function
+    | Assign(_, f) -> aux sacc f (* the variable being assigned is not necessarly used *)
+    | Test f -> aux sacc f
+    | ListP(_, []) -> sacc
+    | ListP(_, [p]) -> auxp sacc p
+    | ListP(pop, p::lp) -> auxp (auxp sacc p) (ListP(pop, lp))
+    | Kleene p -> auxp sacc p
+  in aux SS.empty f
+
+(* return the variables in v that appear in f *)
+let reduce v f = SS.inter v (variables_in_f f)

@@ -224,3 +224,7 @@ let solve f verbose n =
   let fi = formToIForm f in
   let tree = splitIF (SS.empty) fi in
   playthrough tree verbose n
+
+let toOption = function
+  | Proven b -> Some b
+  | Ni -> None
