@@ -1,9 +1,9 @@
 grounding:
-size := {1..200}.
+size := {1..20}.
 
 formula:
 
-psi := <ini><count \star> val(200).
+psi := <ini><count \star> val(20).
 
 program:
 ini := val(0) <- \top.

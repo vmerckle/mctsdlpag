@@ -17,6 +17,16 @@ let get_filename () =
 let time f x =
   let t = Sys.time() in
   let fx = f x  in fx, Sys.time() -. t
+let avg_time n b f x =
+  let fs = ref 0. in
+  for _ = 0 to n do (
+    let _, t = time f x in
+    if b then printf "%fs\n" t;
+    fs := !fs +. t
+  )
+  done;
+  let fx, tfinal = time f x in
+  fx, (!fs+.tfinal)/.((float_of_int n)+.2.)
 
 let get_formula () = 
   let f = get_filename () in
@@ -55,7 +65,7 @@ let get_formula () =
 *)
 
 let print_bool_option = function
-  | None -> sprintf "None"
+  | None -> sprintf "NONE"
   | Some b -> sprintf "%B" b
 
 let start () =
@@ -73,14 +83,17 @@ let start_simple () =
   let fsize = Helper.size new_f in
   let _ = printf "Formula' size: %d\n" fsize in
   (* let _ = printf "Variable used : %s\n" (Formula.Print.ss (Helper.variables_in_f new_f)) in *)
-  let res_simple, time_simple = time Simple.solve new_f in 
-  let babdallah, tabdallah = time (D.Solve.model_checking dcircuit) [] in
-  let treeN = 100000 in
-  let (res_mctsv1,_), time_mctsv1 = time (MCTS.solve old_f) treeN in 
-  let (res_mcdsv1, _), time_mcdsv1 = time (MCDS.solve old_f) treeN in 
+  let res_simple, time_simple = avg_time 1 false Simple.solve new_f in 
+  let babdallah, tabdallah = avg_time 1 false (D.Solve.model_checking dcircuit) [] in
+  let treeN =  100000 in
+  let treeNN = 100000 in
+  let (res_mctsv1,_), time_mctsv1 = time (MCTS.solve old_f) treeNN in 
+  let (res_mcdsv1, _), time_mcdsv1 = time (MCDS.solve old_f) treeNN in 
+  let (res_mcdsv2, _), time_mcdsv2 = avg_time 0 false (MCDSv2.solve new_f) treeN in 
   let _= printf "MCTSv1 : %s in %fs\n" (print_bool_option res_mctsv1) time_mctsv1 in
   let _= printf "MCDSv1 : %s in %fs\n" (print_bool_option res_mcdsv1) time_mcdsv1 in
   let _= printf "Simple : %s in %fs\n" (print_bool_option res_simple) time_simple in
+  let _= printf "MCDSv2 : %s in %fs\n" (print_bool_option res_mcdsv2) time_mcdsv2 in
   let _ = printf "Abdallah' solver : %B in %fs\n" babdallah tabdallah in
   ()
 

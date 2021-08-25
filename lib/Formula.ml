@@ -4,13 +4,16 @@ let _ = ignore (sprintf "")
 module D = Dlpag
 
 (* naming decided by type, SS = string set, SSS = string set set, not great if we might change data structure *)
-module SS = Set.Make (struct type t = string let compare = compare end)
-module SSS = Set.Make (struct type t = SS.t let compare = SS.compare end)
+module Valuation = Set.Make (struct type t = string let compare = compare end)
+module SSS = Set.Make (struct type t = Valuation.t let compare = Valuation.compare end)
+
 
 type foperator = Conj | Disj 
 type poperator = Seq | U
 type formula = Base of bool | Var of (bool * string) | ListF of (foperator * formula list) | Modal of (bool * program * formula)
 and program = Assign of string * formula | Kleene of program | Test of formula | ListP of (poperator * program list)
+
+type model = Valuation.t * formula
 
 module Print = struct
   let list' ll sep rr funl l = sprintf "%s%s%s" ll (String.concat sep (List.map funl l)) rr
@@ -35,12 +38,14 @@ module Print = struct
     | Seq -> ";"
     | U -> "U"
   let ss' ld id rd l = 
-    (*| l when SS.cardinal l = 0-> ""*)
-    sprintf "%s%s%s" ld (String.concat id (SS.elements l)) rd
+    (*| l when Valuation.cardinal l = 0-> ""*)
+    sprintf "%s%s%s" ld (String.concat id (Valuation.elements l)) rd
   let ss set = ss' "{" "," "}" set
   let sss' ld id rd (set:SSS.t) = 
     sprintf "%s%s%s" ld (String.concat id (List.map ss (SSS.elements set))) rd
   let sss (set:SSS.t) = sss' "{" ", " "}" set
+  let valuation v = ss v
+  let model (v,f) = sprintf "%s |= %s" (valuation v) (formula f)
 
 end
 

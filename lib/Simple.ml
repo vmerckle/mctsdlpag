@@ -1,5 +1,6 @@
 open Formula
 open Printf
+let _ = ignore (sprintf "")
 (* do a depth_first to get truth, and a depth_first to get valuation?  no, can't do that with Unions that returns different valuations*)
 
 
@@ -33,8 +34,8 @@ let rec depth_first_single v f =
     | _ -> match p with
       | Assign(s, psi) -> (
         let res = depth_first_single v psi in
-        if res then depth_first_single (SS.add s v) phi
-        else depth_first_single (SS.remove s v) phi )
+        if res then depth_first_single (Valuation.add s v) phi
+        else depth_first_single (Valuation.remove s v) phi )
       | Test psi -> (* choice : solve psi first *)
           let res = depth_first_single v psi in
           if not res then res else depth_first_single v phi
@@ -48,7 +49,7 @@ let rec depth_first_single v f =
         else
           if not res then res else depth_first_single v (Modal(diam, ListP(U, lp), phi))
       )
-      | Kleene p -> let res = depth_first_single v phi in if res then res
+      | Kleene p -> let res = depth_first_single v phi in if res && diam || not res && not diam then res
       else apply_kleene_check_single diam v p phi (* this doesn't return the valuation that makes phi true, but do we even need it ?*)
   )
 (* given a set of valuation, verify if any (diam) or all (not diam) makes phi true *)
@@ -80,8 +81,8 @@ and apply_program_single v p =
   match p with
   | Assign(s, psi) -> (
     let res = depth_first_single v psi in
-    if res then SSS.singleton (SS.add s v)
-    else SSS.singleton (SS.remove s v)
+    if res then SSS.singleton (Valuation.add s v)
+    else SSS.singleton (Valuation.remove s v)
   )
   | Test psi ->
       let res = depth_first_single v psi in
@@ -120,4 +121,43 @@ and apply_kleene_check (already_checked_vals:SSS.t) (to_check_vals:SSS.t) p diam
      false
   )
 
-let solve (f:Formula.formula) = Some (depth_first_single (SS.empty) f)
+  (* add a reference to count the amount of node we go through *)
+let solve (f:Formula.formula) = Some (depth_first_single (Valuation.empty) f)
+
+let rec playout v f = match f with
+  | Base b -> b
+  | Var (b, s) -> Helper.solve_call v b s
+  | ListF(Conj, []) -> true
+  | ListF(Disj, []) -> false
+  | ListF(_, [f]) -> playout v f
+  | ListF(fop, f::lf) ->(
+    match fop with
+      | Conj -> 
+          let res = playout v f in (
+          if not res then res else playout v (ListF(fop, lf)) )
+      | Disj -> let f = Helper.random_select (f, lf) in playout v f
+  )
+  | Modal(diam, p, phi) -> (match phi with
+    | Base b -> b
+    | _ -> match p with
+      | Assign(s, psi) -> (
+        let res = playout v psi in
+        if res then playout (Valuation.add s v) phi
+        else playout (Valuation.remove s v) phi )
+      | Test psi -> (* choice : solve psi first *)
+          let res = playout v psi in
+          if not res then res else playout v phi
+      | ListP(_, []) -> playout v phi
+      | ListP(Seq, p::lp) -> playout v (Modal(diam, p, Modal(diam, ListP(Seq, lp), phi)))
+      | ListP(U, p::lp) -> (
+        if diam then
+          let p = Helper.random_select (p,lp) in
+          let res = playout v (Modal(diam, p, phi)) in
+          if res then res else playout v (Modal(diam, ListP(U, lp), phi))
+        else
+          let p,lp = Helper.random_pop (p,lp) in
+          let res = playout v (Modal(diam, p, phi)) in
+          if not res then res else playout v (Modal(diam, ListP(U, lp), phi))
+      )
+      | Kleene p -> let res = playout v phi in if res && diam || not res && not diam then res else (ignore p;false))
+      (*TODO add a random amount of applying the program ?*)

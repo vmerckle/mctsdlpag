@@ -88,8 +88,6 @@ let hashVFormulaToInt hh (vf:key) counter =
 let hashIntToNode hh i noeud = 
   Hashtbl.replace hh i noeud
 
-let getIdentifier vf = Hashtbl.find hfi vf
-
 let ptoFormu v f b p = Formu(v, MCTSutils.Modal(b, p, f)) 
 let _ = ptoFormu (* TODO *)
 
