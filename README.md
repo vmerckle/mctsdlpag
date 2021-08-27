@@ -17,11 +17,11 @@ Or
 
 # Options
 
-DL-PA Solver
-Usage : mctsdlpag <dlpa file>
-  --quicksolver Quicksolver to use : propositional, allbutkleene, deterministic, smallsize, neversmall
-  --solver Solver to use : MCTS, MCDS, simple
-  -c UCT's constant
-  -v Output debug information
-  -help  Display this list of options
-  --help  Display this list of options
+    DL-PA Solver
+    Usage : mctsdlpag <dlpa file>
+      --quicksolver Quicksolver to use : propositional, allbutkleene, deterministic, smallsize, neversmall
+      --solver Solver to use : MCTS, MCDS, simple
+      -c UCT's constant
+      -v Output debug information
+      -help  Display this list of options
+      --help  Display this list of options
