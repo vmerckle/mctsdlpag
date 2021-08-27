@@ -123,6 +123,7 @@ and apply_kleene_check (already_checked_vals:SSS.t) (to_check_vals:SSS.t) p diam
 
   (* add a reference to count the amount of node we go through *)
 let solve (f:Formula.formula) = Some (depth_first_single (Valuation.empty) f)
+let solve_std (f:Formula.formula) = Some (depth_first_single (Valuation.empty) f), 0
 
 let rec playout v f = match f with
   | Base b -> b

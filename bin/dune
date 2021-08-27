@@ -3,4 +3,4 @@
  (public_name mctsdlpag)
  (modules Main)
 (ocamlopt_flags -O3)
- (libraries mctsdlpag dlpag))
+ (libraries mctsdlpag dlpag core_bench))

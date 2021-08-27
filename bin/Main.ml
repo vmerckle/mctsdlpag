@@ -1,8 +1,13 @@
-open Printf
+(*open Printf*)
 module D = Dlpag
 open Mctsdlpag
+open Core
+open Core_bench
+module S = Stdlib.Sys
 
 let verbose = ref false
+
+exception Exit of float
 
 let get_filename () =
   let speclist = [("-v", Arg.Set verbose, "Output debug information")] in
@@ -15,18 +20,34 @@ let get_filename () =
   | _ -> failwith "Wrong number of arguments."
 
 let time f x =
-  let t = Sys.time() in
-  let fx = f x  in fx, Sys.time() -. t
+  let t = S.time() in
+  let fx = f x  in fx, S.time() -. t
+
 let avg_time n b f x =
   let fs = ref 0. in
-  for _ = 0 to n do (
+  for i = 1 to (n-1) do (
     let _, t = time f x in
-    if b then printf "%fs\n" t;
-    fs := !fs +. t
+    fs := !fs +. t;
+    if b then printf "avg:%fs \t now :%fs\n" (!fs/.(float_of_int i)) t;
   )
   done;
   let fx, tfinal = time f x in
-  fx, (!fs+.tfinal)/.((float_of_int n)+.2.)
+  fx, (!fs+.tfinal)/.((float_of_int n))
+
+let bench n f x =
+  let fs = ref 0. in
+  try
+  for _ = 1 to (n) do (
+    let (fx,_) , t = time f x in(
+    match fx with
+    None -> printf "None result : "; raise (Exit(t))
+  | _ -> ()
+    );
+    fs := !fs +. t;
+  )
+  done;
+  (!fs)/.((float_of_int n))
+  with Exit(t) -> t
 
 let get_formula () = 
   let f = get_filename () in
@@ -34,35 +55,6 @@ let get_formula () =
   (*printf "%s\n\n" (D.Ast.Print.file p);*)
   let g = D.Circuit.file p in
   g, D.Formula.file g
-
-(* let start () =
-  let _ = Random.self_init() in
-  let dcircuit, df = get_formula () in (*Dlpag.Formula.formula*)
-  let f = MCTSutils.formToIForm df in
-  let tree = MCTSutils.splitIF (MCTSutils.SS.empty) f in
-  let _= printf "\nInput formula : %s \n" (D.Formula.Print.formula df) in
-  let _= printf "it has %d variables.\n\n" (MCTSutils.acountF df) in
-  let _= printf "Internal formula : %s \n" (MCTSutils.Print.iformula f) in
-  let _= printf "After one split : \n%s\nPlaythrough now\n\n" (MCTSutils.Print.arbre tree) in
-  let babdallah, tabdallah = time (D.Solve.model_checking dcircuit) [] in
-  let bbrute, tbrute = time (MCTSutils.solve df false) 0 in
-  let  nn = 2000000 in
-  let (bdag, dcount), tdag = time (MCDS.solve df) nn in let _= match bdag with
-    MCTSutils.Proven b -> printf "\n%B : DAG. in %d steps\n" b dcount
-  | MCTSutils.Ni -> printf " \nNo answer : DAG. in %d steps\n" dcount
-  in 
-  let (bmcts,count), tmcts = time (MCTS.solve df) nn in let _= match bmcts with
-    MCTSutils.Proven b -> printf "%B : MCTS. in %d steps\n" b count
-  | MCTSutils.Ni -> printf " No answer : MCTS. in %d steps\n" count
-  in
-(*  let bnew, tnew = time (Treev2.solve df true) nn in let _ = match bnew with
-    | None -> printf "New solver has no answer after %fs\n" tnew
-    | Some b -> printf "New solver found %B after %fs\n" b tnew
-  in  *)
-  let _= printf "%B : Abdallah's naive solver found\n" babdallah in
-  let _ = printf "%B : Brute playthrough" bbrute in 
-  ignore (printf "Abdallah : %fs, Brute : %fs, Mcts : %fs, Dag : %fs\n" tabdallah tbrute tmcts tdag)
-*)
 
 let print_bool_option = function
   | None -> sprintf "NONE"
@@ -75,7 +67,8 @@ let start () =
   let _ = printf "Abdallah' solver : %B in %fs\n" babdallah tabdallah in ()
 
 
-let start_simple () =
+
+let start_debug () =
   let _ = Random.self_init() in
   let dcircuit, (old_f:Dlpag.Formula.formula) = get_formula () in
   let new_f = Formula.formula_retread old_f in
@@ -84,17 +77,70 @@ let start_simple () =
   let _ = printf "Formula' size: %d\n" fsize in
   (* let _ = printf "Variable used : %s\n" (Formula.Print.ss (Helper.variables_in_f new_f)) in *)
   let res_simple, time_simple = avg_time 1 false Simple.solve new_f in 
-  let babdallah, tabdallah = avg_time 1 false (D.Solve.model_checking dcircuit) [] in
+  let babdallah, tabdallah = time (D.Solve.model_checking dcircuit) [] in
   let treeN =  100000 in
-  let treeNN = 100000 in
-  let (res_mctsv1,_), time_mctsv1 = time (MCTS.solve old_f) treeNN in 
-  let (res_mcdsv1, _), time_mcdsv1 = time (MCDS.solve old_f) treeNN in 
-  let (res_mcdsv2, _), time_mcdsv2 = avg_time 0 false (MCDSv2.solve new_f) treeN in 
-  let _= printf "MCTSv1 : %s in %fs\n" (print_bool_option res_mctsv1) time_mctsv1 in
-  let _= printf "MCDSv1 : %s in %fs\n" (print_bool_option res_mcdsv1) time_mcdsv1 in
+  let (res_mcdsv2, _), time_mcdsv2 = avg_time 1 false (MCDSv2.solve new_f) treeN in 
   let _= printf "Simple : %s in %fs\n" (print_bool_option res_simple) time_simple in
   let _= printf "MCDSv2 : %s in %fs\n" (print_bool_option res_mcdsv2) time_mcdsv2 in
   let _ = printf "Abdallah' solver : %B in %fs\n" babdallah tabdallah in
   ()
 
-let _ = start_simple()
+let start_simple () =
+  let _ = Random.self_init() in
+  let _, (old_f:Dlpag.Formula.formula) = get_formula () in
+  let new_f = Formula.formula_retread old_f in
+  (*let _= printf "New print :\n%s\n\n" (Formula.Print.formula new_f) in*)
+  let fsize = Helper.size new_f in
+  let _ = printf "Formula' size: %d\n" fsize in
+  (* let _ = printf "Variable used : %s\n" (Formula.Print.ss (Helper.variables_in_f new_f)) in *)
+  let treeN =  10000000 in
+  let n = 1 in
+  let _ = printf "Simple : %fs\n" (bench n Simple.solve_std new_f) in
+  (*let _ = printf "MCTS(no transposition) : %fs\n" (bench n (MCTS.solve old_f) treeN) in*)
+  let _ = printf "MCDS(no oracle) : %fs\n" (bench n (MCDSv2.solve new_f) treeN) in
+  let _ = printf "notmodal : %fs\n" (bench n (MCDS_notmodal.solve new_f) treeN) in
+  let _ = printf "allbutkleene : %fs\n" (bench n (MCDS_allbutkleene.solve new_f) treeN) in
+  let _ = printf "deteronly : %fs\n" (bench n (MCDS_deteronly.solve new_f) treeN) in
+  let _ = printf "size : %fs\n" (bench n (MCDS_size.solve new_f) treeN) in
+  ()
+let name_to_formula name =
+  let p = D.Parse.from_file () name in
+  (*printf "%s\n\n" (D.Ast.Print.file p);*)
+  let g = D.Circuit.file p in
+  Formula.formula_retread (D.Formula.file g)
+
+let start_corebench() =
+  let _ = Random.self_init() in
+  let _ = "tests.t/ut_star.pa"(*; "tests.t/ut_star_cmplx.pa"] in*) in
+  let f = "encodings/hanoi.pa" in
+  let f = name_to_formula f  in
+  let bign = 10000000 in
+  Command.run (Bench.make_command [
+    Bench.Test.create
+    ~name:"simple" 
+        (fun () -> ignore (Simple.solve f));
+    Bench.Test.create
+    ~name:"notmodal" 
+        (fun () -> ignore (MCDS_notmodal.solve f bign));
+    Bench.Test.create
+    ~name:"allbutkleene" 
+        (fun () -> ignore (MCDS_allbutkleene.solve f bign));
+    Bench.Test.create
+    ~name:"deteronly" 
+        (fun () -> ignore (MCDS_deteronly.solve f bign));
+    Bench.Test.create
+    ~name:"size" 
+        (fun () -> ignore (MCDS_size.solve f bign));
+(*    Bench.Test.create
+    ~name:"MCDS no oracle" 
+        (fun () -> ignore (MCDSv2.solve f bign)); *)
+  ])
+  (*
+  Command.run (Bench.make_command [
+    Bench.Test.create ~name "notmodal"
+    (fun () -> ());
+    (*(fun () -> ignore(MCDS_notmodal.solve new_f 10000));*)
+    Bench.Test.create ~name "allbutkleene"
+    (fun () -> MCDS_allbutkleene.solve new_f 10000);
+  ]) *)
+let () = start_corebench()

@@ -61,28 +61,24 @@ let rec deteronly = function
     | Modal(_, p, phi) -> deteronly phi && deteronlyp p
   and deteronlyp = function
     | Assign _ -> true
-    | Assign _ -> true
     | Test _ -> true
     | ListP(_, []) -> true
     | ListP(Seq, p::lp) -> deteronlyp p && deteronlyp (ListP(Seq, lp))
-    | ListP(U, []) -> true
     | ListP(U, _) -> false
     | Kleene _ -> false
 
 let rec allbutkleene = function
     | Base _ | Var _ -> true
     | ListF(_, []) -> true
-    | ListF(_, [f]) -> deteronly f
-    | ListF(fop, f::lf) -> deteronly f && deteronly (ListF(fop, lf))
-    | Modal(_, p, phi) -> deteronly phi && deteronlyp p
+    | ListF(_, [f]) -> allbutkleene f
+    | ListF(fop, f::lf) -> allbutkleene f && allbutkleene (ListF(fop, lf))
+    | Modal(_, p, phi) -> allbutkleene phi && allbutkleenep p
   and allbutkleenep = function
-    | Assign _ -> true
     | Assign _ -> true
     | Test _ -> true
     | ListP(_, []) -> true
-    | ListP(Seq, p::lp) -> deteronlyp p && deteronlyp (ListP(Seq, lp))
-    | ListP(U, []) -> true
-    | ListP(U, p::lp) -> deteronlyp p && deteronlyp (ListP(Seq, lp))
+    | ListP(Seq, p::lp) -> allbutkleenep p && allbutkleenep (ListP(Seq, lp))
+    | ListP(U, p::lp) -> allbutkleenep p && allbutkleenep (ListP(Seq, lp))
     | Kleene _ -> false
 
 (* how deeply undeterministic our formula is *)

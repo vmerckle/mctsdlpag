@@ -28,7 +28,7 @@ type treeNode = | Unexplored of unexploredNode
                 | RunAssign of Valuation.t * Formula.formula * string * Formula.formula *)
 
 let oracle v f = Simple.depth_first_single v f
-let small_enough f = false (* Helper.allbutkleene f *)
+let small_enough f = Helper.notmodal f
  (* (Helper.notmodal f)|| false (* (Helper.size f) < 1*)*)
 (*let size = (Helper.size f)  in
 (*let _= printf "size= %d\n%s\n" size (Formula.Print.formula f) in*)
@@ -251,7 +251,6 @@ let rec update_aux path res boolnode =
 let update exp_node exp_i path res = 
   Hash.set_node exp_i exp_node ;
   update_aux (exp_i::path) res None
-
 let solve (f:Formula.formula) (n:int) =
   let iroot = register_unexploredf Valuation.empty f in
   try
