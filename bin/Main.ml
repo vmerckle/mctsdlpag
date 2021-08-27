@@ -1,65 +1,72 @@
-(*open Printf*)
+open Printf
 module D = Dlpag
 open Mctsdlpag
-open Core
-open Core_bench
 module S = Stdlib.Sys
 
+
+(* arg parsing  *)
 let verbose = ref false
+let input_names = ref []
+let filename = ref ""
+let uctconstant = ref (sqrt 2.0)
+let quicksolver = ref "neversmall" (*if --quicksolver is omitted*)
+let quicksolverf = ref Deciders.neversmall
+let solver = ref "simple"
+let solverf = ref Simple.solve
 
-exception Exit of float
+let speclist = [
+("--quicksolver", Arg.Set_string quicksolver, "Quicksolver to use : propositional, allbutkleene, deterministic, smallsize, neversmall");
+("--solver", Arg.Set_string solver, "Solver to use : MCTS, MCDS, simple");
+("-c", Arg.Set_float uctconstant, "UCT's constant");
+("-v", Arg.Set verbose, "Output debug information")
+]
+let usage_msg = "DL-PA Solver\nUsage : mctsdlpag <dlpa file>"
+(* function to handle anonymous arguments *)
+let add_name s = input_names := s :: !input_names
 
-let get_filename () =
-  let speclist = [("-v", Arg.Set verbose, "Output debug information")] in
-  let usage_msg = "DL-PA Solver\nUsage : mctsdlpag <dlpa file>" in
-  let input_names = ref [] in
-  let add_name s = input_names := s :: !input_names in
+let arg_verify () =
   Arg.parse speclist add_name usage_msg;
-  match !input_names with
-  | [n] -> n 
+  (match !input_names with
+  | [n] -> filename := n 
   | _ -> failwith "Wrong number of arguments."
-
-let time f x =
-  let t = S.time() in
-  let fx = f x  in fx, S.time() -. t
-
-let avg_time n b f x =
-  let fs = ref 0. in
-  for i = 1 to (n-1) do (
-    let _, t = time f x in
-    fs := !fs +. t;
-    if b then printf "avg:%fs \t now :%fs\n" (!fs/.(float_of_int i)) t;
-  )
-  done;
-  let fx, tfinal = time f x in
-  fx, (!fs+.tfinal)/.((float_of_int n))
-
-let bench n f x =
-  let fs = ref 0. in
-  try
-  for _ = 1 to (n) do (
-    let (fx,_) , t = time f x in(
-    match fx with
-    None -> printf "None result : "; raise (Exit(t))
-  | _ -> ()
-    );
-    fs := !fs +. t;
-  )
-  done;
-  (!fs)/.((float_of_int n))
-  with Exit(t) -> t
+  );
+  (quicksolverf := match !quicksolver with
+    | "propositional" -> Deciders.propositional
+    | "allbutkleene" -> Deciders.allbutkleene
+    | "deterministic" -> Deciders.deterministic
+    | "smallsize" -> Deciders.smallsize
+    | "neversmall" -> Deciders.neversmall
+    | _ -> failwith "Wrong quicksolver");
+  let foreverN = max_int in
+  (solverf := match !solver with
+    | "MCTS" -> MCTS.solve ~n:foreverN
+    | "MCDS" -> MCDSv2.solve ~n:foreverN ~quicksolver:(!quicksolverf)
+    | "simple" -> Simple.solve
+    | _ -> failwith "Wrong solver")
 
 let get_formula () = 
-  let f = get_filename () in
-  let p = D.Parse.from_file () f in
+  let p = D.Parse.from_file () !filename in
   (*printf "%s\n\n" (D.Ast.Print.file p);*)
   let g = D.Circuit.file p in
-  g, D.Formula.file g
+  let old_f = D.Formula.file g in
+  old_f
+  (*Formula.formula_retread old_f*)
+
 
 let print_bool_option = function
   | None -> sprintf "NONE"
   | Some b -> sprintf "%B" b
 
+let start () = 
+  arg_verify ();
+  quicksolverf := Deciders.neversmall;
+  let _ = !quicksolverf (Formula.Base true) in
+  let old_f = get_formula () in
+  let _ =printf "solver :%s, quicksolver : %s, constant :%f\n" !solver !quicksolver !uctconstant in
+  printf "Result on %s : %s" !filename (print_bool_option (!solverf old_f))
+
+
+  (*
 let start () =
   let _ = Random.self_init() in
   let dcircuit, _ = get_formula () in (*Dlpag.Formula.formula*)
@@ -76,15 +83,15 @@ let start_debug () =
   let fsize = Helper.size new_f in
   let _ = printf "Formula' size: %d\n" fsize in
   (* let _ = printf "Variable used : %s\n" (Formula.Print.ss (Helper.variables_in_f new_f)) in *)
-  let res_simple, time_simple = avg_time 1 false Simple.solve new_f in 
+  let res_simple, time_simple = Bench.time Simple.solve new_f in 
   let babdallah, tabdallah = time (D.Solve.model_checking dcircuit) [] in
   let treeN =  100000 in
-  let (res_mcdsv2, _), time_mcdsv2 = avg_time 1 false (MCDSv2.solve new_f) treeN in 
+  let (res_mcdsv2, _), time_mcdsv2 = Bench.time (MCDSv2.solve new_f) treeN in 
   let _= printf "Simple : %s in %fs\n" (print_bool_option res_simple) time_simple in
   let _= printf "MCDSv2 : %s in %fs\n" (print_bool_option res_mcdsv2) time_mcdsv2 in
   let _ = printf "Abdallah' solver : %B in %fs\n" babdallah tabdallah in
   ()
-
+(*
 let start_simple () =
   let _ = Random.self_init() in
   let _, (old_f:Dlpag.Formula.formula) = get_formula () in
@@ -103,44 +110,7 @@ let start_simple () =
   let _ = printf "deteronly : %fs\n" (bench n (MCDS_deteronly.solve new_f) treeN) in
   let _ = printf "size : %fs\n" (bench n (MCDS_size.solve new_f) treeN) in
   ()
-let name_to_formula name =
-  let p = D.Parse.from_file () name in
-  (*printf "%s\n\n" (D.Ast.Print.file p);*)
-  let g = D.Circuit.file p in
-  Formula.formula_retread (D.Formula.file g)
+*)
+*)
 
-let start_corebench() =
-  let _ = Random.self_init() in
-  let _ = "tests.t/ut_star.pa"(*; "tests.t/ut_star_cmplx.pa"] in*) in
-  let f = "encodings/hanoi.pa" in
-  let f = name_to_formula f  in
-  let bign = 10000000 in
-  Command.run (Bench.make_command [
-    Bench.Test.create
-    ~name:"simple" 
-        (fun () -> ignore (Simple.solve f));
-    Bench.Test.create
-    ~name:"notmodal" 
-        (fun () -> ignore (MCDS_notmodal.solve f bign));
-    Bench.Test.create
-    ~name:"allbutkleene" 
-        (fun () -> ignore (MCDS_allbutkleene.solve f bign));
-    Bench.Test.create
-    ~name:"deteronly" 
-        (fun () -> ignore (MCDS_deteronly.solve f bign));
-    Bench.Test.create
-    ~name:"size" 
-        (fun () -> ignore (MCDS_size.solve f bign));
-(*    Bench.Test.create
-    ~name:"MCDS no oracle" 
-        (fun () -> ignore (MCDSv2.solve f bign)); *)
-  ])
-  (*
-  Command.run (Bench.make_command [
-    Bench.Test.create ~name "notmodal"
-    (fun () -> ());
-    (*(fun () -> ignore(MCDS_notmodal.solve new_f 10000));*)
-    Bench.Test.create ~name "allbutkleene"
-    (fun () -> MCDS_allbutkleene.solve new_f 10000);
-  ]) *)
-let () = start_corebench()
+let () = start ()

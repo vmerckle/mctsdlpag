@@ -131,7 +131,7 @@ let solve_fi f n =
     done ; (Ni,n)
   with Found (x,i) -> x,i
   
-let solve df n =
+let solve df ~n =
   let f = MCTSutils.formToIForm df in
   (*let tree = MCTSutils.splitIF (MCTSutils.SS.empty) f in*)
-  let bdag, nodecount = solve_fi f n in MCTSutils.toOption bdag, nodecount
+  let bdag, nodecount = solve_fi f n in MCTSutils.toOption bdag

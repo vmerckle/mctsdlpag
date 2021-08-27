@@ -28,7 +28,8 @@ type treeNode = | Unexplored of unexploredNode
                 | RunAssign of Valuation.t * Formula.formula * string * Formula.formula *)
 
 let oracle v f = Simple.depth_first_single v f
-let small_enough f = false (* Helper.allbutkleene f *)
+let small_enough = ref Deciders.neversmall
+(*let small_enough f = ignore f;false (* Helper.allbutkleene f *)*)
  (* (Helper.notmodal f)|| false (* (Helper.size f) < 1*)*)
 (*let size = (Helper.size f)  in
 (*let _= printf "size= %d\n%s\n" size (Formula.Print.formula f) in*)
@@ -70,7 +71,7 @@ let rec model_to_unexplored(v:Valuation.t) (f:Formula.formula) =
     | Base _ | Var _ | ListF(_, []) -> Leaf(oracle v f)
     | Modal(_, _, Base b) -> Leaf b
     | _ ->
-  if small_enough f then RunLeaf(v, f)
+  if (!small_enough f) then RunLeaf(v, f)
   else match f with
     | Base _ | Var _ | ListF(_, []) -> Leaf(oracle v f)
     | ListF(_, [f]) -> model_to_unexplored v f
@@ -85,7 +86,7 @@ let rec model_to_unexplored(v:Valuation.t) (f:Formula.formula) =
             else
               model_to_unexplored (Valuation.remove s v) phi
           )
-          | _ -> if small_enough psi then RunAssign(v, psi, s, phi)
+          | _ -> if !small_enough psi then RunAssign(v, psi, s, phi)
                else Unexplored(PreNodeSingle(v, f))
       end
       | ListP(_, []) -> model_to_unexplored v phi
@@ -252,7 +253,9 @@ let update exp_node exp_i path res =
   Hash.set_node exp_i exp_node ;
   update_aux (exp_i::path) res None
 
-let solve (f:Formula.formula) (n:int) =
+(* labeled arguments are implemented as type lel.. *)
+let solve_new (f:Formula.formula) ~quicksolver ~n:(n:int) =
+  let _ = small_enough := quicksolver in
   let iroot = register_unexploredf Valuation.empty f in
   try
     for i = 0 to n do
@@ -270,3 +273,6 @@ let solve (f:Formula.formula) (n:int) =
         end
     done ; (None, n)
   with Found(ob, n) -> Some ob, n
+
+let solve old_f ~n ~quicksolver =  let ob, _ = solve_new ~quicksolver ~n (Formula.formula_retread old_f)
+in ob
