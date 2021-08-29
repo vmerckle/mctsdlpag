@@ -6,6 +6,7 @@ module S = Stdlib.Sys
 
 (* arg parsing  *)
 let verbose = ref false
+let batch = ref false
 let input_names = ref []
 let filename = ref ""
 let uctconstant = ref (sqrt 2.0)
@@ -18,7 +19,8 @@ let speclist = [
 ("--quicksolver", Arg.Set_string quicksolver, "Quicksolver to use : propositional, allbutkleene, deterministic, smallsize, neversmall");
 ("--solver", Arg.Set_string solver, "Solver to use : MCTS, MCDS, simple");
 ("-c", Arg.Set_float uctconstant, "UCT's constant");
-("-v", Arg.Set verbose, "Output debug information")
+("-v", Arg.Set verbose, "Output debug information");
+("--batch", Arg.Set batch , "standardized output : value(-1:none, 0:false, 1:true), ...")
 ]
 let usage_msg = "DL-PA Solver\nUsage : mctsdlpag <dlpa file>"
 (* function to handle anonymous arguments *)
@@ -39,8 +41,8 @@ let arg_verify () =
     | _ -> failwith "Wrong quicksolver");
   let foreverN = max_int in
   (solverf := match !solver with
-    | "MCTS" -> MCTS.solve ~n:foreverN
-    | "MCDS" -> MCDSv2.solve ~n:foreverN ~quicksolver:(!quicksolverf)
+    | "MCTS" -> MCTS.solve ~n:foreverN ~constant:!uctconstant ~quicksolver:(!quicksolver)
+    | "MCDS" -> MCDSv2.solve ~n:foreverN ~quicksolver:(!quicksolverf) ~constant:!uctconstant
     | "simple" -> Simple.solve
     | _ -> failwith "Wrong solver")
 
@@ -56,14 +58,22 @@ let get_formula () =
 let print_bool_option = function
   | None -> sprintf "NONE"
   | Some b -> sprintf "%B" b
+let batch_bool_option = function
+  | None -> "none"
+  | Some true -> "true"
+  | Some false -> "false"
 
 let start () = 
+  let _ = Random.self_init() in
   arg_verify ();
-  quicksolverf := Deciders.neversmall;
-  let _ = !quicksolverf (Formula.Base true) in
   let old_f = get_formula () in
-  let _ =printf "solver :%s, quicksolver : %s, constant :%f\n" !solver !quicksolver !uctconstant in
-  printf "Result on %s : %s" !filename (print_bool_option (!solverf old_f))
+  let _ = if not !batch then
+    printf "solver :%s, quicksolver : %s, constant :%f\n" !solver !quicksolver !uctconstant else () in
+  let bo, others = !solverf old_f in
+  let otherS = String.concat "," others in
+  if not !batch then
+    printf "Result on %s : %s\nOther : %s\n" !filename (print_bool_option bo) otherS
+  else printf "%s" (String.concat "," ((batch_bool_option bo)::others))
 
 
   (*

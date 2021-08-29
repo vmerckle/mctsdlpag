@@ -29,6 +29,7 @@ type treeNode = | Unexplored of unexploredNode
 
 let oracle v f = Simple.depth_first_single v f
 let small_enough = ref Deciders.neversmall
+let constant = ref (sqrt 2.)
 (*let small_enough f = ignore f;false (* Helper.allbutkleene f *)*)
  (* (Helper.notmodal f)|| false (* (Helper.size f) < 1*)*)
 (*let size = (Helper.size f)  in
@@ -194,7 +195,7 @@ let compute_score parent_nop parent_stats  i :float = match Hash.get_node i with
   | RunLeaf _ -> raise (FoundI i) (* TODO heuristic *)
   | RunAssign _ -> raise (FoundI i) (*TODO same *)
   | CountedLeaf _ -> float_of_int min_int
-  | Middle({contents=None}, _, _, stats) -> UCT.compute_score parent_stats stats parent_nop 
+  | Middle({contents=None}, _, _, stats) -> UCT.compute_score parent_stats stats parent_nop !constant
 
 
 let rec select_aux i path = match Hash.get_node i with
@@ -254,8 +255,9 @@ let update exp_node exp_i path res =
   update_aux (exp_i::path) res None
 
 (* labeled arguments are implemented as type lel.. *)
-let solve_new (f:Formula.formula) ~quicksolver ~n:(n:int) =
+let solve_new (f:Formula.formula) ~quicksolver ~n:(n:int) ~c =
   let _ = small_enough := quicksolver in
+  let _ = constant := c in
   let iroot = register_unexploredf Valuation.empty f in
   try
     for i = 0 to n do
@@ -274,5 +276,5 @@ let solve_new (f:Formula.formula) ~quicksolver ~n:(n:int) =
     done ; (None, n)
   with Found(ob, n) -> Some ob, n
 
-let solve old_f ~n ~quicksolver =  let ob, _ = solve_new ~quicksolver ~n (Formula.formula_retread old_f)
-in ob
+let solve old_f ~n ~quicksolver ~constant =  let ob, iter = solve_new ~quicksolver ~n ~c:constant (Formula.formula_retread old_f)
+in ob, [sprintf "%d" iter]

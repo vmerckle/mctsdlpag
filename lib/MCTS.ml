@@ -13,6 +13,8 @@ type arbre = Noeud of (state * arbre list * oparbre * stats) | Feuille of feuill
 
 exception Found of state * int
 exception Unexpec 
+let uctconstant = ref (sqrt 2.0)
+let pp = ref false
 
 let isProven t = match t with
   | Feuille(Direct b) | Noeud(Proven b, _,_,_) -> Proven b
@@ -22,7 +24,6 @@ let resolved t = match isProven t with
 Proven _ -> true
   | _ -> false
 
-let calcUCB n stat = let nf, rf, nif = float_of_int n, float_of_int stat.nwin, float_of_int stat.n in rf/.nif +. 0.1 *. sqrt(log(nf)/.nif) 
 
 (* select one node with highest UCT or never explored in a list, returns it and its position in the list *)
 let selectone n l = let _= if false then eprintf "\nDeciding between %d ..\n%s" (List.length l) (Print.list' "" "\n-->" "\n\n"  Print.arbreK l)in match l with [] -> assert false
@@ -34,7 +35,7 @@ let selectone n l = let _= if false then eprintf "\nDeciding between %d ..\n%s" 
       | Feuille(Direct _) -> aux maxUCT maxNode maxNum (num+1) t
       | Feuille(Formu(_, _)) as x -> x, num
       | Noeud(_, _ , _ , stat) as newp when stat.n = 0 -> newp, num
-      | Noeud(_, _ , _, stat) as newp -> let score = calcUCB n stat in
+      | Noeud(_, _ , _, stat) as newp -> let score = UCT.uCB n stat.n stat.nwin !uctconstant in
       let _= if stat.n > (-1) then if false then eprintf "select : %s(max=%f) -> %f\n" (Print.arbre newp) maxUCT score in 
         if score > maxUCT then aux score newp num (num+1) t  else aux maxUCT maxNode maxNum (num+1) t
       end
@@ -44,15 +45,15 @@ let notyetExplored stat = stat.n = 0
 (* goes through a tree t by selection to find a node not yet played out once = a feuille or
  a noeud with zero played 
  returns : the updated selected node, and a path to it [1,2,1] = take first child, take second, take first and you are on the node*)
-let selectexpand n t =  
+let selectexpand t =  
   match t with
   | Feuille(Direct _) -> let _= eprintf "found a feuille directly " in raise Unexpec (* shouldn't happen *)
   | _ -> begin 
     let rec aux path tree = let _= if false then eprintf "selectexpand : %s\n" (Print.arbre tree) in 
     match tree with
     | Feuille(Direct _) ->let _= eprintf "ffound a feuille directly " in  raise Unexpec(* shouldn't happen *)
-    | Feuille(Formu(v, f)) -> (splitIF v f, path)
-    | Noeud(_, l, _, stat) as newp -> if (notyetExplored stat) then (newp, path) else let choice,num = selectone n l in
+    | Feuille(Formu(v, f)) as tt -> let f = if (!pp && propositional f) then quicksolve tt else f in (splitIF v f, path)
+    | Noeud(_, l, _, stat) as newp -> if (notyetExplored stat) then (newp, path) else let choice,num = selectone stat.n l in
       aux (num::path) choice
    in let newp, path = aux [] t in
    (newp, List.rev path)
@@ -116,7 +117,7 @@ let solve_fi f n =
       let proof = isProven !t in match proof with
       | Proven b -> raise (Found(Proven b, i))
       | Ni -> begin
-        let newp, path = selectexpand i !t in
+        let newp, path = selectexpand !t in
         let _= if false then eprintf "Path now = %s\n" (String.concat "," (List.map string_of_int path)) in 
         let b = isProven newp in
         let res = match b with
@@ -131,7 +132,9 @@ let solve_fi f n =
     done ; (Ni,n)
   with Found (x,i) -> x,i
   
-let solve df ~n =
+let solve df ~n ~constant ~quicksolver =
+  if quicksolver = "propositional" then pp := true else pp := false ;
+  uctconstant := constant;
   let f = MCTSutils.formToIForm df in
   (*let tree = MCTSutils.splitIF (MCTSutils.SS.empty) f in*)
-  let bdag, nodecount = solve_fi f n in MCTSutils.toOption bdag
+  let bdag, nodecount = solve_fi f n in MCTSutils.toOption bdag, [sprintf "%d" nodecount]

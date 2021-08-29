@@ -13,7 +13,7 @@ Or
 
 # Example usage
 
-		mctsdlpag encodings/hanoi.pa --solver MCDS --quicksolver propositional -c 0.3
+	mctsdlpag encodings/hanoi.pa --solver MCDS --quicksolver propositional -c 0.3
 
 # Options
 

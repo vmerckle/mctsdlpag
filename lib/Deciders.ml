@@ -21,6 +21,37 @@ let size (f:Formula.formula) = let rec aux acc = function
   in aux 0 f
 let smallsize f = size f < 100
 
+exception Above
+
+let sizepaper (maxsize:int) (f:Formula.formula) : int = 
+  let rec aux (maxsize:int) = function
+    | Base _ | Var _ -> 1
+    | ListF(_, []) -> 0
+    | ListF(fop, f::lf) -> let maxsize, s = short f maxsize in s + aux maxsize (ListF(fop, lf))
+    | Modal(_, p, phi) -> 
+      begin 
+      match p with
+        | Assign(_, f) -> let maxsize,s = short phi maxsize in 2 * (aux (maxsize/2) f) + s
+        | Test f -> let maxsize,s = short phi maxsize in aux maxsize f + s
+        | ListP(_, []) -> let _,s = short phi maxsize in s
+        | ListP(Seq, p::lp) -> let new_f = Modal(true, p, Modal(true, ListP(Seq, lp), phi)) in aux maxsize new_f
+        | ListP(U, p::lp) -> let s = aux maxsize (Modal(true, p, phi)) in
+        if s > maxsize then raise Above else (s + aux (maxsize -s) (Modal(true, ListP(U, lp), phi)))
+        | Kleene p -> let nb_valsp = MCTSutils.twopow (Valuation.cardinal (Helper.variables_in_f (Modal(true, p, Base true)))) in
+        let plist = List.init nb_valsp (fun n -> ListP(Seq, List.init n (fun _ -> p))) in
+          aux maxsize (Modal(true, ListP(U, plist), phi))
+      end
+  and short f maxsize = let s = aux maxsize f in
+    if s >maxsize then raise Above else (maxsize - s),s
+  in aux maxsize f
+
+
+let sizeagain f maxsize = 
+  try let s = sizepaper maxsize f in s < maxsize
+  with Above -> false
+
+let smallsizev2 f =  sizeagain f 100
+let _ = ignore smallsizev2
 
 let rec propositional = function
     | Base _ | Var _ -> true

@@ -1,12 +1,12 @@
 open Statistics
 
-let uCB ntotal n nwin = 
+let uCB ntotal n nwin constant = 
   let ntotal, n, nwin = float_of_int ntotal, float_of_int n, float_of_int nwin in 
-  nwin/.n +. 0.4 *. sqrt(log(ntotal)/.n)
+  nwin/.n +. constant *. sqrt(log(ntotal)/.n)
 
-let compute_score s_parents s_child nop = 
+let compute_score s_parents s_child nop constant = 
   match nop with
-  | Node.And | Node.Or | Node.Not -> uCB s_parents.was_tried s_child.was_tried s_child.reward
+  | Node.And | Node.Or | Node.Not -> uCB s_parents.was_tried s_child.was_tried s_child.reward constant
   (*TODO try stuff*)
 
 

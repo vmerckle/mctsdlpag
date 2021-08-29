@@ -193,6 +193,12 @@ let rec playthrough t b n =
    in
   let _= if b then eprintf "%s} %b \n" (kek n "     ") x  in x
 
+let quicksolve t = let b = playthrough t false 0 in
+  Base b
+
+let propositional f = match f with
+  | CallF _ | Base _ | ListF _ -> true
+  | _ -> false
 (* count nodes slow version*)
 let rec playthroughc t = 
   match t with
