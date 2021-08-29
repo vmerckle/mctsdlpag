@@ -8,7 +8,7 @@ def readanyvar(f):
     with open(f, "r") as ff:
         s = ff.read().split("\n")
         for line in s[:-1]:
-            l.append([x for x in line.split(",")])
+            l.append([x for x in line.split(";")])
     return l
 def length(a):
     s = 0

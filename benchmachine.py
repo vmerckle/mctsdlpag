@@ -1,7 +1,9 @@
 import argparse
 import time
+import os
 
 import subprocess
+from multiprocessing import Pool, TimeoutError
 
 def run(cmd, timeout=None):
     reachedTimeout = False
@@ -22,12 +24,31 @@ def run(cmd, timeout=None):
     lines = y.split("\n")
     z = lines[-1].strip().split(",")
     return elapsed_time, bool(z[0])
+def runx(cmd, timeout=None):
+    reachedTimeout = False
+    start_time = time.time()
+    try:
+        x = subprocess.check_output(cmd.split(" "), timeout=timeout)
+    except subprocess.TimeoutExpired as e:
+        reachedTimeout = True
+        x = e.output
+    except Exception as e:
+        return -1
+    elapsed_time = time.time() - start_time
+    if reachedTimeout:
+        return -1
+    if x is None:
+        return -1
+    y = x.decode("utf-8")
+    lines = y.split("\n")
+    z = lines[-1].strip().split(",")
+    return elapsed_time
 
 # print 2darray (list of list) to .csv
 def writeanyvar(l, fname, delete=True):
     ss = []
     for vx in l:
-        ss.append(",".join([str(i) for i in vx]))
+        ss.append(";".join([str(i) for i in vx]))
     s = "\n".join(ss) + "\n"
 
     filemod = "w"
@@ -65,10 +86,24 @@ def run_bench(cmd, timeout, n_sample, encoding):
         print(f"took {elapsed_time}")
     return total_time/n_sample
 
+def run_bench_multi(pool, cmd, timeout, n_sample, encoding):
+    cmd = cmd+" "+encoding
+    res = [pool.apply_async(runx, (cmd, timeout)) for i in range(n_sample)]
+    #print([r.get(timeout=timeout+1) for r in res])
+    return res
+
+
 def many_parameters_one_encoding(cmds, timeout, n_sample, encoding):
     res = []
     for cmd,cmdname in cmds:
         res.append(run_bench(cmd, timeout, n_sample, encoding))
+    return res
+
+def many_parameters_one_encoding_multi(pool, cmds, timeout, n_sample, encoding):
+
+    res = []
+    for cmd,cmdname in cmds:
+        res.append(run_bench_multi(pool, cmd, timeout, n_sample, encoding))
     return res
 
 def many_parameters_one_encoding_constant(cmds, timeout, n_sample, encoding):
@@ -95,19 +130,68 @@ def many_parameters_many_encodings(cmds, timeout, n_sample, encodings):
         res = many_parameters_one_encoding(cmds, timeout, n_sample, encoding)
         alllines.append([encodingname] + res)
     return alllines
+ 
+#return 2d array, x = parameters --->, y = encodings
+def many_parameters_many_encodings_multi(cores, cmds, timeout, n_sample, encodings):
+    with Pool(processes=cores) as pool:
+        firstline = ["Problem"]
+        for cmd,cmdname in cmds:
+            firstline.append(cmdname)
+        alllines = [firstline]
+        res = []
+        for encoding,encodingname in encodings:
+            res.append((many_parameters_one_encoding_multi(pool, cmds, timeout, n_sample, encoding), encodingname))
         
+        for line,encodingname in res:
+            colres = []
+            for col in line:
+                s = 0
+                for sampl in col:
+                    s += (sampl.get(timeout=timeout+1))
+                s = s/len(col)
+                if s < 0:
+                    s = "TO"
+
+                colres.append(s)
+            alllines.append([encodingname] + colres)
+
+        for x in alllines:
+                print(x)
+        return alllines
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     #parser.add_argument("n", help="task number", type=int, default=5, nargs='?')
     #parser.add_argument("max_task_size", help="max task size", type=int, default=10, nargs='?')
     parser.add_argument("filename", help="test", type=str)
+    parser.add_argument("-core", help="number of cores", default=0, type=int)
     parser.add_argument("-test", help="test", type=str, default="manymany", nargs='?')
     parser.add_argument("-timeout", help="timeout in s", type=int, default=1, nargs='?')
     parser.add_argument("-samples", help="number of samples", type=int, default=1, nargs='?')
     args = parser.parse_args()
     #elapsed_time, x = run("mctsdlpag encodings/hanoi.pa --solver MCDS --quicksolver smallsize -c 0.2 --batch", timeout=1)
-    if args.test == "manymany":
+    if args.core >= 1:
+        allalgo = [
+                #("MCTS", "MCTS"),
+                #("MCTS --quicksolver propositional", "MCTS 1"),
+                #("MCDS", "MCDS"),
+                ("MCDS --quicksolver propositional", "MCDS 1"),
+                #("MCDS --quicksolver allbutkleene", "MCDS 2"),
+                #("MCDS --quicksolver deterministic", "MCDS 3"),
+                #("MCDS --quicksolver smallsize", "MCDS 4"),
+                ("simple", "Simple")]
+        allencodings = [
+                ("hanoi.pa", "Hanoi(3,3)"),
+                ("counter.pa", "Counter"),
+                #("counter1000000.pa", "BigCounter"),
+                ]
+        encodings = [(f"encodings/{enc}",encname) for enc,encname in allencodings]
+        constant = 0.2
+        cmds = [(f"mctsdlpag --batch -c {constant} --solver {algo}",algoname) for algo,algoname in allalgo]
+        x = many_parameters_many_encodings_multi(args.core, cmds, args.timeout, args.samples, encodings)
+        writeanyvar(x, args.filename)
+                
+    elif args.test == "manymany":
         allalgo = [
                 ("MCTS", "MCTS"),
                 ("MCTS --quicksolver propositional", "MCTS 1"),
@@ -118,7 +202,7 @@ if __name__ == '__main__':
                 ("MCDS --quicksolver smallsize", "MCDS 4"),
                 ("simple", "Simple")]
         allencodings = [
-                ("hanoi.pa", "Hanoi(3;3)"),
+                ("hanoi.pa", "Hanoi(3,3)"),
                 ("counter.pa", "Counter"),
                 ("counter1000000.pa", "BigCounter"),
                 ]
