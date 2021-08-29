@@ -106,6 +106,38 @@ def many_parameters_one_encoding_multi(pool, cmds, timeout, n_sample, encoding):
         res.append(run_bench_multi(pool, cmd, timeout, n_sample, encoding))
     return res
 
+def many_parameters_one_encoding_constant_multi(cores, cmds, timeout, n_sample, encoding):
+    with Pool(processes=cores) as pool:
+        firstline = ["C constant"]
+        for cmd,cmdname in cmds:
+            firstline.append(cmdname)
+        alllines = [firstline]
+        encoding,encodingname = encoding
+        res = []
+        for c in [0.0001, 0.001, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 4, 8, 1024]:
+            resres = []
+            for cmd, cmdname in cmds:
+                resres.append(run_bench_multi(pool, f"{cmd} -c {c}", timeout, n_sample, encoding))
+            res.append((resres,f"{c}"))
+        
+        for line,encodingname in res:
+            colres = []
+            for col in line:
+                s = 0
+                for sampl in col:
+                    s += (sampl.get(timeout=timeout+1))
+                s = s/len(col)
+                if s < 0:
+                    s = "TO"
+
+                colres.append(s)
+            alllines.append([encodingname] + colres)
+
+        for x in alllines:
+            print(x)
+        return alllines
+
+
 def many_parameters_one_encoding_constant(cmds, timeout, n_sample, encoding):
     firstline = ["C constant"]
     for cmd,cmdname in cmds:
@@ -156,7 +188,7 @@ def many_parameters_many_encodings_multi(cores, cmds, timeout, n_sample, encodin
             alllines.append([encodingname] + colres)
 
         for x in alllines:
-                print(x)
+            print(x)
         return alllines
 
 if __name__ == '__main__':
@@ -171,55 +203,36 @@ if __name__ == '__main__':
     args = parser.parse_args()
     #elapsed_time, x = run("mctsdlpag encodings/hanoi.pa --solver MCDS --quicksolver smallsize -c 0.2 --batch", timeout=1)
     if args.core >= 1:
-        allalgo = [
-                #("MCTS", "MCTS"),
-                #("MCTS --quicksolver propositional", "MCTS 1"),
-                #("MCDS", "MCDS"),
-                ("MCDS --quicksolver propositional", "MCDS 1"),
-                #("MCDS --quicksolver allbutkleene", "MCDS 2"),
-                #("MCDS --quicksolver deterministic", "MCDS 3"),
-                #("MCDS --quicksolver smallsize", "MCDS 4"),
-                ("simple", "Simple")]
-        allencodings = [
-                ("hanoi.pa", "Hanoi(3,3)"),
-                ("counter.pa", "Counter"),
-                #("counter1000000.pa", "BigCounter"),
-                ]
-        encodings = [(f"encodings/{enc}",encname) for enc,encname in allencodings]
-        constant = 0.2
-        cmds = [(f"mctsdlpag --batch -c {constant} --solver {algo}",algoname) for algo,algoname in allalgo]
-        x = many_parameters_many_encodings_multi(args.core, cmds, args.timeout, args.samples, encodings)
-        writeanyvar(x, args.filename)
+        if args.test == "manymany":
+            allalgo = [
+                    #("MCTS", "MCTS"),
+                    #("MCTS --quicksolver propositional", "MCTS 1"),
+                    #("MCDS", "MCDS"),
+                    ("MCDS --quicksolver propositional", "MCDS 1"),
+                    #("MCDS --quicksolver allbutkleene", "MCDS 2"),
+                    #("MCDS --quicksolver deterministic", "MCDS 3"),
+                    #("MCDS --quicksolver smallsize", "MCDS 4"),
+                    ("simple", "Simple")]
+            allencodings = [
+                    ("hanoi.pa", "Hanoi(3,3)"),
+                    ("counter.pa", "Counter"),
+                    #("counter1000000.pa", "BigCounter"),
+                    ]
+            encodings = [(f"encodings/{enc}",encname) for enc,encname in allencodings]
+            constant = 0.2
+            cmds = [(f"mctsdlpag --batch -c {constant} --solver {algo}",algoname) for algo,algoname in allalgo]
+            x = many_parameters_many_encodings_multi(args.core, cmds, args.timeout, args.samples, encodings)
+            writeanyvar(x, args.filename)
                 
-    elif args.test == "manymany":
-        allalgo = [
-                ("MCTS", "MCTS"),
-                ("MCTS --quicksolver propositional", "MCTS 1"),
-                ("MCDS", "MCDS"),
-                ("MCDS --quicksolver propositional", "MCDS 1"),
-                ("MCDS --quicksolver allbutkleene", "MCDS 2"),
-                ("MCDS --quicksolver deterministic", "MCDS 3"),
-                ("MCDS --quicksolver smallsize", "MCDS 4"),
-                ("simple", "Simple")]
-        allencodings = [
-                ("hanoi.pa", "Hanoi(3,3)"),
-                ("counter.pa", "Counter"),
-                ("counter1000000.pa", "BigCounter"),
-                ]
-        encodings = [(f"encodings/{enc}",encname) for enc,encname in allencodings]
-        constant = 0.2
-        cmds = [(f"mctsdlpag --batch -c {constant} --solver {algo}",algoname) for algo,algoname in allalgo]
-        x = many_parameters_many_encodings(cmds, args.timeout, args.samples, encodings)
-        writeanyvar(x, args.filename)
-    elif args.test == "ctest":
-        allalgo = [
-                ("MCTS --quicksolver propositional", "MCTS propositional"),
-                ("MCDS --quicksolver propositional", "MCDS propositional"),
-                ]
-        allencodings = [
-                ("counter.pa", "Hanoi (3,3)"),
-                ]
-        encodings = [(f"encodings/{enc}",encname) for enc,encname in allencodings]
-        cmds = [(f"mctsdlpag --batch --solver {algo}",algoname) for algo,algoname in allalgo]
-        x = many_parameters_one_encoding_constant(cmds, args.timeout, args.samples, encodings[0])
-        writeanyvar(x, filename)
+        elif args.test == "ctest":
+            allalgo = [
+                    ("MCTS --quicksolver propositional", "MCTS propositional"),
+                    ("MCDS --quicksolver propositional", "MCDS propositional"),
+                    ]
+            allencodings = [
+                    ("counter.pa", "Hanoi (3,3)"),
+                    ]
+            encodings = [(f"encodings/{enc}",encname) for enc,encname in allencodings]
+            cmds = [(f"mctsdlpag --batch --solver {algo}",algoname) for algo,algoname in allalgo]
+            x = many_parameters_one_encoding_constant_multi(args.core, cmds, args.timeout, args.samples, encodings[0])
+            writeanyvar(x, args.filename)
