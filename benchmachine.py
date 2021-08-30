@@ -4,6 +4,7 @@ import os
 
 import subprocess
 from multiprocessing import Pool, TimeoutError
+from producelex import convertotex
 
 def run(cmd, timeout=None):
     reachedTimeout = False
@@ -33,12 +34,12 @@ def runx(cmd, timeout=None):
         reachedTimeout = True
         x = e.output
     except Exception as e:
-        return -1
+        return -1000
     elapsed_time = time.time() - start_time
     if reachedTimeout:
         return -1
     if x is None:
-        return -1
+        return -1000
     y = x.decode("utf-8")
     lines = y.split("\n")
     z = lines[-1].strip().split(",")
@@ -58,12 +59,13 @@ def writeanyvar(l, fname, delete=True):
     with open(fname, filemod) as f:
         f.write(s)
 
+
 def readanyvar(f):
     l = []
     with open(f, "r") as ff:
         s = ff.read().split("\n")
-        for line in s:
-            l.append([float(x) for x in line.split(",")])
+        for line in s[:-1]:
+            l.append([x for x in line.split(";")])
     return l
 
 def run_bench(cmd, timeout, n_sample, encoding):
@@ -127,7 +129,9 @@ def many_parameters_one_encoding_constant_multi(cores, cmds, timeout, n_sample, 
                 for sampl in col:
                     s += (sampl.get(timeout=timeout+1))
                 s = s/len(col)
-                if s < 0:
+                if s < -100:
+                    s = "SO"
+                elif s < 0:
                     s = "TO"
 
                 colres.append(s)
@@ -181,7 +185,9 @@ def many_parameters_many_encodings_multi(cores, cmds, timeout, n_sample, encodin
                 for sampl in col:
                     s += (sampl.get(timeout=timeout+1))
                 s = s/len(col)
-                if s < 0:
+                if s < -100:
+                    s = "SO"
+                elif s < 0:
                     s = "TO"
 
                 colres.append(s)
@@ -196,45 +202,65 @@ if __name__ == '__main__':
     #parser.add_argument("n", help="task number", type=int, default=5, nargs='?')
     #parser.add_argument("max_task_size", help="max task size", type=int, default=10, nargs='?')
     parser.add_argument("filename", help="test", type=str)
-    parser.add_argument("-core", help="number of cores", default=0, type=int)
+    parser.add_argument("-output", help="test", type=str)
+    parser.add_argument("-core", help="number of cores", default=1, type=int)
     parser.add_argument("-test", help="test", type=str, default="manymany", nargs='?')
     parser.add_argument("-timeout", help="timeout in s", type=int, default=1, nargs='?')
     parser.add_argument("-samples", help="number of samples", type=int, default=1, nargs='?')
+    parser.add_argument("-algos", help="algo to select, ex:1,2,3", type=str)
+    parser.add_argument("-encodings", help="encoding to select, ex:1,2,3", type=str)
     args = parser.parse_args()
-    #elapsed_time, x = run("mctsdlpag encodings/hanoi.pa --solver MCDS --quicksolver smallsize -c 0.2 --batch", timeout=1)
-    if args.core >= 1:
-        if args.test == "manymany":
-            allalgo = [
-                    #("MCTS", "MCTS"),
-                    #("MCTS --quicksolver propositional", "MCTS 1"),
-                    #("MCDS", "MCDS"),
-                    #("MCDS --quicksolver propositional", "MCDS 1"),
-                    #("MCDS --quicksolver allbutkleene", "MCDS 2"),
-                    #("MCDS --quicksolver deterministic", "MCDS 3"),
-                    #("MCDS --quicksolver smallsize", "MCDS 4"),
-                    ("simple", "Simple"),
-                    ("naive", "Naive")
-                    ]
-            allencodings = [
-                    ("hanoi.pa", "Hanoi(3,3)"),
-                    ("counter.pa", "Counter"),
-                    #("counter1000000.pa", "BigCounter"),
-                    ]
-            encodings = [(f"encodings/{enc}",encname) for enc,encname in allencodings]
-            constant = 0.2
-            cmds = [(f"mctsdlpag --batch -c {constant} --solver {algo}",algoname) for algo,algoname in allalgo]
-            x = many_parameters_many_encodings_multi(args.core, cmds, args.timeout, args.samples, encodings)
-            writeanyvar(x, args.filename)
-                
-        elif args.test == "ctest":
-            allalgo = [
-                    ("MCTS --quicksolver propositional", "MCTS propositional"),
-                    ("MCDS --quicksolver propositional", "MCDS propositional"),
-                    ]
-            allencodings = [
-                    ("hanoi.pa", "Hanoi (3,3)"),
-                    ]
-            encodings = [(f"encodings/{enc}",encname) for enc,encname in allencodings]
-            cmds = [(f"mctsdlpag --batch --solver {algo}",algoname) for algo,algoname in allalgo]
-            x = many_parameters_one_encoding_constant_multi(args.core, cmds, args.timeout, args.samples, encodings[0])
-            writeanyvar(x, args.filename)
+    allallalgo = [
+            ("MCTS", "MCTS"),
+            ("MCTS --quicksolver propositional", "MCTS 1"),
+            ("MCDS", "MCDS"),
+            ("MCDS --quicksolver propositional", "MCDS 1"),
+            ("MCDS --quicksolver allbutkleene", "MCDS 2"),
+            ("MCDS --quicksolver deterministic", "MCDS 3"),
+            ("MCDS --quicksolver smallsize", "MCDS 4"),
+            ("simple", "Simple"),
+            ("naive", "Naive")
+            ]
+    if args.algos is None:
+        print("Algo to select : with -algos 1,4,5...")
+        for i, algo in enumerate(allallalgo):
+            print(i+1, algo)
+        exit(0)
+    algoint = args.algos.split(",")
+    algoint = [int(x) for x in algoint]
+    allalgo = []
+    for i,algo in enumerate(allallalgo):
+        if (i+1) in algoint:
+            allalgo.append(algo)
+    allencodings = [
+            ("hanoi.pa", "Hanoi(3,3)"),
+            ("counter.pa", "Counter"),
+            ]
+    if args.encodings is None:
+        print("Encodings to select : with -encodings 1,4,5...")
+        for i, encoding in enumerate(allencodings):
+            print(i+1, encoding)
+        exit(0)
+    encodingint = args.encodings.split(",")
+    encodingint = [int(x) for x in encodingint]
+    encodings = []
+    for i,encoding in enumerate(allencodings):
+        if (i+1) in encodingint:
+            encodings.append(encoding)
+
+    encodings = [(f"encodings/{enc}",encname) for enc,encname in allencodings]
+    if args.test == "manymany":
+        constant = 0.2
+        cmds = [(f"mctsdlpag --batch -c {constant} --solver {algo}",algoname) for algo,algoname in allalgo]
+        x = many_parameters_many_encodings_multi(args.core, cmds, args.timeout, args.samples, encodings)
+    elif args.test == "ctest":
+        if len(allencoding) > 1 :
+            print("Constant optimization : should only include one encoding")
+            exit(0)
+        cmds = [(f"mctsdlpag --batch --solver {algo}",algoname) for algo,algoname in allalgo]
+        x = many_parameters_one_encoding_constant_multi(args.core, cmds, args.timeout, args.samples, encodings[0])
+    writeanyvar(x, "tables/"+args.filename+".data")
+    xs = readanyvar("tables/"+args.filename+".data")
+    s = convertotex(xs, args.timeout, args.samples, args.filename)
+    with open("tables/"+args.filename+".tex", "w") as f:
+        f.write(s)

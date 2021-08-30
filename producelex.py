@@ -49,7 +49,7 @@ def convertoneline(l):
     therest = " & ".join([a for a in convtoints(l)])
     return f"        {name} & {therest}\\\\\n"
 
-def convertotex(ll):
+def convertotex(ll, timeout=0, samples=1, label=""):
     firstline = ll[0]
     howmany = str(len(firstline) - 1)
     others = ll[1:]
@@ -57,7 +57,8 @@ def convertotex(ll):
     top="        "+firstline[0] + " & " + mtop + "\\\\\n"
     middle= "".join([convertoneline(x) for x in others])
     return """\\begin{table}
-    \\caption{Execution time in seconds}
+    \\label{"""+label+"""}
+    \\caption{"""+label+""": Execution time in seconds}
     \\begin{tabular}{l*"""+howmany+"""{r@{.}l}} 
         \\toprule
 """+top+"        \\midrule\n"+middle+"""        \\bottomrule
