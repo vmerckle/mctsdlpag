@@ -34,15 +34,19 @@ def runx(cmd, timeout=None):
         reachedTimeout = True
         x = e.output
     except Exception as e:
+        print("SO!    ",cmd)
         return -1000
     elapsed_time = time.time() - start_time
     if reachedTimeout:
+        print("TO!TO=",timeout, "   ", cmd)
         return -1
     if x is None:
+        print("Other problem!    ",cmd)
         return -1000
     y = x.decode("utf-8")
     lines = y.split("\n")
     z = lines[-1].strip().split(",")
+    print(z, "ran", cmd, " in ", elapsed_time)
     return elapsed_time
 
 # print 2darray (list of list) to .csv
@@ -248,13 +252,13 @@ if __name__ == '__main__':
         if (i+1) in encodingint:
             encodings.append(encoding)
 
-    encodings = [(f"encodings/{enc}",encname) for enc,encname in allencodings]
+    encodings = [(f"encodings/{enc}",encname) for enc,encname in encodings]
     if args.test == "manymany":
         constant = 0.2
         cmds = [(f"mctsdlpag --batch -c {constant} --solver {algo}",algoname) for algo,algoname in allalgo]
         x = many_parameters_many_encodings_multi(args.core, cmds, args.timeout, args.samples, encodings)
     elif args.test == "ctest":
-        if len(allencoding) > 1 :
+        if len(encodings) > 1 :
             print("Constant optimization : should only include one encoding")
             exit(0)
         cmds = [(f"mctsdlpag --batch --solver {algo}",algoname) for algo,algoname in allalgo]
