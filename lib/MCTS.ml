@@ -35,7 +35,7 @@ let selectone n l = let _= if false then eprintf "\nDeciding between %d ..\n%s" 
       | Feuille(Direct _) -> aux maxUCT maxNode maxNum (num+1) t
       | Feuille(Formu(_, _)) as x -> x, num
       | Noeud(_, _ , _ , stat) as newp when stat.n = 0 -> newp, num
-      | Noeud(_, _ , _, stat) as newp -> let score = UCT.uCB n stat.n stat.nwin !uctconstant in
+      | Noeud(_, _ , _, stat) as newp -> let score = UCT.uCB n stat.n (float_of_int stat.nwin) !uctconstant in
       let _= if stat.n > (-1) then if false then eprintf "select : %s(max=%f) -> %f\n" (Print.arbre newp) maxUCT score in 
         if score > maxUCT then aux score newp num (num+1) t  else aux maxUCT maxNode maxNum (num+1) t
       end

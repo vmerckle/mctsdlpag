@@ -56,9 +56,13 @@ def convertotex(ll, timeout=0, samples=1, label=""):
     mtop = "&".join(["\multicolumn{2}{c}{"+n+"}" for n in firstline[1:]])
     top="        "+firstline[0] + " & " + mtop + "\\\\\n"
     middle= "".join([convertoneline(x) for x in others])
+    if timeout != 0 and samples != 1:
+        xxx = f"timeout={timeout}, samples={samples},"
+    else:
+        xxx = "no info"
     return """\\begin{table}
     \\label{"""+label+"""}
-    \\caption{"""+label+""": Execution time in seconds}
+    \\caption{"""+label+""": """+xxx+"""Execution time in seconds}
     \\begin{tabular}{l*"""+howmany+"""{r@{.}l}} 
         \\toprule
 """+top+"        \\midrule\n"+middle+"""        \\bottomrule

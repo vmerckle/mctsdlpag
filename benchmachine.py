@@ -237,9 +237,11 @@ if __name__ == '__main__':
         if (i+1) in algoint:
             allalgo.append(algo)
     allencodings = [
-            ("hanoi.pa", "Hanoi(3,3)"),
-            ("counter.pa", "Counter"),
             ]
+    for i in range(1,17):
+        allencodings.append((f"hanoi3{i}.pa", f"Hanoi(3,{i})"))
+    for i in [1000, 10000]:
+        allencodings.append((f"counter{i}.pa", f"Counter({i})"))
     if args.encodings is None:
         print("Encodings to select : with -encodings 1,4,5...")
         for i, encoding in enumerate(allencodings):

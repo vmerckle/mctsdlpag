@@ -64,6 +64,17 @@ module Print = struct
     and one_int_formula i = let node = Hash.get_node i in
   sprintf "\t%d -> %s\n" i (treeNode node)
   and int_formula li = (String.concat "" (List.map one_int_formula li))
+  let rec treeNodee = function
+    | Unexplored(u) -> sprintf "unexp(%s)" (unexploredNode u)
+    | Middle(bo, nop, li, stat) -> sprintf "Middle(%s, %s, %s, %s)\n%s" (boolopt !bo) (noperator nop) (Formula.Print.list (sprintf "%d") li) (Statistics.Print.statistics stat) (int_formula li)
+    | Leaf b -> sprintf "leaf(%B)" b
+    | CountedLeaf b -> sprintf "countedLeaf(%B)" b
+    | RunLeaf m -> sprintf "runleaf(%s)" (Formula.Print.model m)
+    | RunAssign(v,psi,s,phi) -> sprintf "runassign(%s,%s,%s,%s)" (Formula.Print.valuation v) (Formula.Print.formula psi) s (Formula.Print.formula phi)
+    and one_int_formula i = let node = Hash.get_node i in(
+    match node with Unexplored _ -> sprintf "\t%d -> unexpl\n" i
+    | _ -> sprintf "\t%d -> %s\n" i (treeNodee node))
+  and int_formula li = (String.concat "" (List.map one_int_formula li))
 end
 
 (*REM could convert to (v, f:InternalFormulaType) if there is some heavy lifting.. *)
@@ -238,14 +249,14 @@ let simulate_more n i =
         s := !s + (match simulate i with
           | None -> raise (FoundI 0)
           | Some true -> 1
-          | Some false -> -1 )
-      done;!s
+          | Some false -> 0 )
+      done;Some ((float_of_int !s)/.(float_of_int n))
     end
-  with FoundI _ -> 0
+  with FoundI _ -> None
 
-let update_node node res boolnode = match node with
+let update_node node res boolnode nplayoutx = ignore nplayoutx ; match node with
     | Middle({contents=None}, nop, li, stats) -> begin
-      let newbool, newstat = UCT.update_res stats nop res boolnode in
+      let newbool, newstat = UCT.update_res_n stats nop res boolnode 1 in
       match newbool with
         | None -> None, Middle({contents=None}, nop, li, newstat)
         | Some b -> Some b, CountedLeaf b
@@ -255,16 +266,16 @@ let update_node node res boolnode = match node with
     | x -> None, x
 
 (* res = playout result, boolnode = Some b if a child is now true *)
-let update_single i res boolnode = 
-  let newbool, newnode = update_node (Hash.get_node i) res boolnode
+let update_single i res boolnode nplayoutx = 
+  let newbool, newnode = update_node (Hash.get_node i) res boolnode nplayoutx
   in Hash.set_node i newnode ;
   newbool
 
-let rec update_aux path res boolnode =
+let rec update_aux path res boolnode nplayoutx =
   match path with
   | [] -> ()
-  | i::li -> let newbool = update_single i res boolnode in
-    update_aux li res newbool
+  | i::li -> let newbool = update_single i res boolnode nplayoutx in
+    update_aux li res newbool nplayoutx
 let update exp_node exp_i path res = 
   Hash.set_node exp_i exp_node ;
   update_aux (exp_i::path) res None
@@ -276,7 +287,7 @@ let solve_new (f:Formula.formula) ~quicksolver ~n:(n:int) ~c =
   let iroot = register_unexploredf Valuation.empty f in
   try
     for i = 0 to n do
-      (*let _ = printf "i=%d, iroot= %s\n" i (Print.treeNode (Hash.get_node iroot)) in*)
+      (*let _ = printf "i=%d, iroot= %s\n" i (Print.treeNodee (Hash.get_node iroot)) in*)
       match Hash.get_node iroot with
         | CountedLeaf b -> raise (Found(b, i))
         | Leaf b -> raise (Found (b, i))
@@ -284,8 +295,9 @@ let solve_new (f:Formula.formula) ~quicksolver ~n:(n:int) ~c =
           let i_selected_node, path = select iroot in
       (*let _ = printf "i=%d, selected(%d)= %s\n" i i_selected_node (Print.treeNode (Hash.get_node i_selected_node)) in*)
           let expanded_node = expand i_selected_node in
-          let res = simulate i_selected_node in
-          let _ = update expanded_node i_selected_node path res in
+          let res = simulate_more !nplayout i_selected_node in
+          let _ = (match res with None -> update expanded_node i_selected_node path res 0
+        | Some _ ->  update expanded_node i_selected_node path res 1) in
           ()
         end
     done ; (None, n)

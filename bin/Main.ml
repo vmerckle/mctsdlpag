@@ -14,11 +14,13 @@ let quicksolver = ref "neversmall" (*if --quicksolver is omitted*)
 let quicksolverf = ref Deciders.neversmall
 let solver = ref "simple"
 let solverf = ref Simple.solve
+let nplayout = ref 0
 
 let speclist = [
 ("--quicksolver", Arg.Set_string quicksolver, "Quicksolver to use : propositional, allbutkleene, deterministic, smallsize, neversmall");
 ("--solver", Arg.Set_string solver, "Solver to use : MCTS, MCDS, simple, naive");
 ("-c", Arg.Set_float uctconstant, "UCT's constant");
+("--nplayout", Arg.Set_int nplayout, "Number of playout per expansion");
 ("-v", Arg.Set verbose, "Output debug information");
 ("--batch", Arg.Set batch , "standardized output : value(-1:none, 0:false, 1:true), ...")
 ]
@@ -43,6 +45,7 @@ let arg_verify () =
   (solverf := match !solver with
     | "MCTS" -> MCTS.solve ~n:foreverN ~constant:!uctconstant ~quicksolver:(!quicksolver)
     | "MCDS" -> MCDSv2.solve ~n:foreverN ~quicksolver:(!quicksolverf) ~constant:!uctconstant
+    | "MCDSn" -> MCDSv2_exp.solve ~n:foreverN ~quicksolver:(!quicksolverf) ~constant:!uctconstant ~playout:!nplayout
     | "simple" -> Simple.solve
     | "naive" -> MCTSutils.solve
     | _ -> failwith "Wrong solver")

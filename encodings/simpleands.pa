@@ -1,0 +1,13 @@
+grounding:
+
+formula:
+psi := <ini>((b \or b \and b \and (b\and b))\or k).
+k := (a \and a \and a \and c).
+c := (a \and a \and a \and a).
+b := b \and b \and b \and b.
+
+program:
+ini := a <- \top.
+
+main:
+psi.
