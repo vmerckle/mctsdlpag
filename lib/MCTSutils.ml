@@ -196,6 +196,8 @@ let rec playthrough t b n =
 let quicksolve t = let b = playthrough t false 0 in
   Base b
 
+
+
 let propositional f = match f with
   | CallF _ | Base _ | ListF _ -> true
   | _ -> false
@@ -226,10 +228,10 @@ let rec playthroughcount t c =
         | And|Or -> playthroughcount h (playthroughcount (Noeud(Ni, t, op, s)) (c+1))
         | Not -> playthroughcount h (c+1)
 
-let solve f verbose n =
+let solve f =
   let fi = formToIForm f in
   let tree = splitIF (SS.empty) fi in
-  playthrough tree verbose n
+  Some (playthrough tree false 0), []
 
 let toOption = function
   | Proven b -> Some b

@@ -208,11 +208,13 @@ if __name__ == '__main__':
                     #("MCTS", "MCTS"),
                     #("MCTS --quicksolver propositional", "MCTS 1"),
                     #("MCDS", "MCDS"),
-                    ("MCDS --quicksolver propositional", "MCDS 1"),
+                    #("MCDS --quicksolver propositional", "MCDS 1"),
                     #("MCDS --quicksolver allbutkleene", "MCDS 2"),
                     #("MCDS --quicksolver deterministic", "MCDS 3"),
                     #("MCDS --quicksolver smallsize", "MCDS 4"),
-                    ("simple", "Simple")]
+                    ("simple", "Simple"),
+                    ("naive", "Naive")
+                    ]
             allencodings = [
                     ("hanoi.pa", "Hanoi(3,3)"),
                     ("counter.pa", "Counter"),
@@ -230,7 +232,7 @@ if __name__ == '__main__':
                     ("MCDS --quicksolver propositional", "MCDS propositional"),
                     ]
             allencodings = [
-                    ("counter.pa", "Hanoi (3,3)"),
+                    ("hanoi.pa", "Hanoi (3,3)"),
                     ]
             encodings = [(f"encodings/{enc}",encname) for enc,encname in allencodings]
             cmds = [(f"mctsdlpag --batch --solver {algo}",algoname) for algo,algoname in allalgo]

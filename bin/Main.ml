@@ -17,7 +17,7 @@ let solverf = ref Simple.solve
 
 let speclist = [
 ("--quicksolver", Arg.Set_string quicksolver, "Quicksolver to use : propositional, allbutkleene, deterministic, smallsize, neversmall");
-("--solver", Arg.Set_string solver, "Solver to use : MCTS, MCDS, simple");
+("--solver", Arg.Set_string solver, "Solver to use : MCTS, MCDS, simple, naive");
 ("-c", Arg.Set_float uctconstant, "UCT's constant");
 ("-v", Arg.Set verbose, "Output debug information");
 ("--batch", Arg.Set batch , "standardized output : value(-1:none, 0:false, 1:true), ...")
@@ -44,6 +44,7 @@ let arg_verify () =
     | "MCTS" -> MCTS.solve ~n:foreverN ~constant:!uctconstant ~quicksolver:(!quicksolver)
     | "MCDS" -> MCDSv2.solve ~n:foreverN ~quicksolver:(!quicksolverf) ~constant:!uctconstant
     | "simple" -> Simple.solve
+    | "naive" -> MCTSutils.solve
     | _ -> failwith "Wrong solver")
 
 let get_formula () = 

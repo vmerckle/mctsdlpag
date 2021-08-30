@@ -1,8 +1,6 @@
 grounding:
 size := {1..1000}.
-
 formula:
-
 psi := <ini><count \star> val(1000).
 
 program:
