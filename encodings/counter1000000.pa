@@ -1,9 +1,9 @@
 grounding:
-size := {1..61}.
+size := {1..1000}.
 
 formula:
 
-psi := <ini><count*> val(61).
+psi := <ini><count \star> val(1000).
 
 program:
 ini := val(0) <- \top.
@@ -14,3 +14,4 @@ main:
 psi.
 
 % expected : true
+

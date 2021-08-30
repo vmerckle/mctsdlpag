@@ -1,9 +1,0 @@
-grounding:
-
-formula:
-psi := <((a <- \top) \cup (?a? \seq b <- \top))\star>b.
-
-program:
-
-main:
-psi.

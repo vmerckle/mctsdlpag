@@ -1,9 +1,0 @@
-grounding:
-
-formula:
-psi := <a <- \top \and (\bot \or \top)> a.
-
-program:
-
-main:
-psi.
