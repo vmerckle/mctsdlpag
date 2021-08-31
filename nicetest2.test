@@ -1,1 +1,0 @@
-python3 benchmachine.py -core 2 -test ctest -timeout 4 -samples 1 nctest -encodings 3 -algos 8,10,11,4
