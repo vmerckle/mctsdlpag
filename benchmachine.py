@@ -39,7 +39,7 @@ def runx(cmd, timeout=None):
     elapsed_time = time.time() - start_time
     if reachedTimeout:
         print("TO!TO=",timeout, "   ", cmd)
-        return -1
+        return -1000
     if x is None:
         print("Other problem!    ",cmd)
         return -1000
@@ -130,12 +130,19 @@ def many_parameters_one_encoding_constant_multi(cores, cmds, timeout, n_sample, 
             colres = []
             for col in line:
                 s = 0
+                timeouted = False
+                souted = False
                 for sampl in col:
-                    s += (sampl.get(timeout=timeout+1))
+                    si = (sampl.get(timeout=timeout+1))
+                    s += si
+                    if si < -100:
+                        souted = True
+                    elif si < 0:
+                        timeouted = True
                 s = s/len(col)
-                if s < -100:
+                if souted:
                     s = "SO"
-                elif s < 0:
+                elif timeouted:
                     s = "TO"
 
                 colres.append(s)
@@ -256,8 +263,11 @@ if __name__ == '__main__':
             ("MCDS --quicksolver allbutkleene", "MCDS 2"),
             ("MCDS --quicksolver deterministic", "MCDS 3"),
             ("MCDS --quicksolver smallsize", "MCDS 4"),
-            ("MCDSn --quicksolver propositional --nplayout 1", "MCDSn 1"),
             ("MCDSn --nplayout 1", "MCDSn"),
+            ("MCDSn --quicksolver propositional --nplayout 1", "MCDSn 1"),
+            ("MCDSn --quicksolver propositional --nplayout 2", "MCDSn2 1"),
+            ("MCDSn --quicksolver propositional --nplayout 4", "MCDSn4 1"),
+            ("MCDSn --quicksolver propositional --nplayout 10", "MCDSn10 1"),
             ("MCDSn --quicksolver propositional --nplayout 20", "MCDSn20 1"),
             ("MCDSn --quicksolver propositional --nplayout 100", "MCDSn100 1"),
             ("simple", "Simple"),
