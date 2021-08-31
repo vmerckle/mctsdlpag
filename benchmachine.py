@@ -285,7 +285,9 @@ if __name__ == '__main__':
         if (i+1) in algoint:
             allalgo.append(algo)
     allencodings = [
+            ("simpletrap.pa", "Simple trap"),
             ]
+
     for i in range(1,17):
         allencodings.append((f"hanoi3{i}.pa", f"Hanoi(3,{i})"))
     for i in [180, 500, 1000, 10000]:
@@ -303,7 +305,7 @@ if __name__ == '__main__':
             encodings.append(encoding)
 
     encodings = [(f"encodings/{enc}",encname) for enc,encname in encodings]
-    constant = 1.1
+    constant = 0.1
     if args.test == "manymany":
         cmds = [(f"mctsdlpag --batch -c {constant} --solver {algo}",algoname) for algo,algoname in allalgo]
         x = many_parameters_many_encodings_multi(args.core, cmds, args.timeout, args.samples, encodings)
