@@ -145,6 +145,40 @@ def many_parameters_one_encoding_constant_multi(cores, cmds, timeout, n_sample, 
             print(x)
         return alllines
 
+def many_parameters_one_encoding_ntant_multi(cores, cmds, timeout, n_sample, encoding):
+    with Pool(processes=cores) as pool:
+        firstline = ["Nb rollout"]
+        for cmd,cmdname in cmds:
+            firstline.append(cmdname)
+        alllines = [firstline]
+        encoding,encodingname = encoding
+        res = []
+        for c in [1,2,10,20,100]:
+            resres = []
+            for cmd, cmdname in cmds:
+                resres.append(run_bench_multi(pool, f"{cmd} --nplayout {c}", timeout, n_sample, encoding))
+            res.append((resres,f"{c}"))
+        
+        for line,encodingname in res:
+            colres = []
+            for col in line:
+                s = 0
+                for sampl in col:
+                    s += (sampl.get(timeout=timeout+1))
+                s = s/len(col)
+                if s < -100:
+                    s = "SO"
+                elif s < 0:
+                    s = "TO"
+
+                colres.append(s)
+            alllines.append([encodingname] + colres)
+
+        for x in alllines:
+            print(x)
+        return alllines
+
+
 
 def many_parameters_one_encoding_constant(cmds, timeout, n_sample, encoding):
     firstline = ["C constant"]
@@ -222,6 +256,10 @@ if __name__ == '__main__':
             ("MCDS --quicksolver allbutkleene", "MCDS 2"),
             ("MCDS --quicksolver deterministic", "MCDS 3"),
             ("MCDS --quicksolver smallsize", "MCDS 4"),
+            ("MCDSn --quicksolver propositional --nplayout 1", "MCDSn 1"),
+            ("MCDSn --nplayout 1", "MCDSn"),
+            ("MCDSn --quicksolver propositional --nplayout 20", "MCDSn20 1"),
+            ("MCDSn --quicksolver propositional --nplayout 100", "MCDSn100 1"),
             ("simple", "Simple"),
             ("naive", "Naive")
             ]
@@ -255,8 +293,8 @@ if __name__ == '__main__':
             encodings.append(encoding)
 
     encodings = [(f"encodings/{enc}",encname) for enc,encname in encodings]
+    constant = 1.1
     if args.test == "manymany":
-        constant = 0.2
         cmds = [(f"mctsdlpag --batch -c {constant} --solver {algo}",algoname) for algo,algoname in allalgo]
         x = many_parameters_many_encodings_multi(args.core, cmds, args.timeout, args.samples, encodings)
     elif args.test == "ctest":
@@ -265,6 +303,13 @@ if __name__ == '__main__':
             exit(0)
         cmds = [(f"mctsdlpag --batch --solver {algo}",algoname) for algo,algoname in allalgo]
         x = many_parameters_one_encoding_constant_multi(args.core, cmds, args.timeout, args.samples, encodings[0])
+
+    elif args.test == "ntest":
+        if len(encodings) > 1 :
+            print("Constant optimization : should only include one encoding")
+            exit(0)
+        cmds = [(f"mctsdlpag --batch -c {constant} --solver {algo}",algoname) for algo,algoname in allalgo]
+        x = many_parameters_one_encoding_ntant_multi(args.core, cmds, args.timeout, args.samples, encodings[0])
     writeanyvar(x, "tables/"+args.filename+".data")
     xs = readanyvar("tables/"+args.filename+".data")
     s = convertotex(xs, args.timeout, args.samples, args.filename)
