@@ -61,11 +61,11 @@ def convertotex(ll, timeout=0, samples=1, label=""):
     else:
         xxx = "no info"
     return """\\begin{table}
-    \\label{"""+label+"""}
     \\caption{"""+label+""": """+xxx+"""Execution time in seconds}
     \\begin{tabular}{l*"""+howmany+"""{r@{.}l}} 
         \\toprule
 """+top+"        \\midrule\n"+middle+"""        \\bottomrule
+    \\label{"""+label+"""}
     \end{tabular}
 \end{table}"""
 
