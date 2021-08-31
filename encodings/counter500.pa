@@ -1,7 +1,7 @@
 grounding:
-size := {1..180}.
+size := {1..500}.
 formula:
-psi := <ini><count \star> val(180).
+psi := <ini><count \star> val(500).
 
 program:
 ini := val(0) <- \top.

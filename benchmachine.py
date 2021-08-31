@@ -120,7 +120,7 @@ def many_parameters_one_encoding_constant_multi(cores, cmds, timeout, n_sample, 
         alllines = [firstline]
         encoding,encodingname = encoding
         res = []
-        for c in [0.0001, 0.001, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 4, 8, 1024]:
+        for c in [0.0001, 0.001, 0.01,0.03,0.07,0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 4, 8, 1024]:
             resres = []
             for cmd, cmdname in cmds:
                 resres.append(run_bench_multi(pool, f"{cmd} -c {c}", timeout, n_sample, encoding))
@@ -187,7 +187,7 @@ def many_parameters_one_encoding_constant(cmds, timeout, n_sample, encoding):
     alllines = [firstline]
 
     encoding,encodingname = encoding
-    for c in [0.0001, 0.001, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 4, 8, 1024]:
+    for c in [0.0001, 0.001, 0.01,0.03,0.07,0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 4, 8, 1024]:
         res = [f"{c}"]
         for cmd,cmdname in cmds:
             res.append(run_bench(f"{cmd} -c {c}", timeout, n_sample, encoding))
@@ -278,7 +278,7 @@ if __name__ == '__main__':
             ]
     for i in range(1,17):
         allencodings.append((f"hanoi3{i}.pa", f"Hanoi(3,{i})"))
-    for i in [1000, 10000]:
+    for i in [180, 500, 1000, 10000]:
         allencodings.append((f"counter{i}.pa", f"Counter({i})"))
     if args.encodings is None:
         print("Encodings to select : with -encodings 1,4,5...")
