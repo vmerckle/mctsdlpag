@@ -1,0 +1,16 @@
+\begin{table}
+    \caption{bigendtest: no infoExecution time in seconds}
+    \begin{tabular}{l*4{r@{.}l}} 
+        \toprule
+        Problem & \multicolumn{2}{c}{MCTS 1}&\multicolumn{2}{c}{MCDS 1}&\multicolumn{2}{c}{MCDSn2 1}&\multicolumn{2}{c}{Simple}\\
+        \midrule
+        Simple trap & \multicolumn{2}{c}{SO} & 4&2 & 3&7 & 8&8\\
+        Hanoi(3,1) & 0&012 & 0&013 & 0&0080 & 0&011\\
+        Hanoi(3,2) & 0&017 & 0&010 & 0&010 & 0&0080\\
+        Hanoi(3,3) & 1&08 & 0&17 & 0&29 & 0&0085\\
+        Counter(180) & 146& & 106& & 128& & 0&015\\
+        Counter(500) & \multicolumn{2}{c}{SO} & \multicolumn{2}{c}{SO} & \multicolumn{2}{c}{SO} & 0&055\\
+        \bottomrule
+    \label{bigendtest}
+    \end{tabular}
+\end{table}
