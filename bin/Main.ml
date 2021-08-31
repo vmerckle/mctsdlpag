@@ -48,7 +48,7 @@ let arg_verify () =
     | "MCDSn" -> MCDSv2_exp.solve ~n:foreverN ~quicksolver:(!quicksolverf) ~constant:!uctconstant ~playout:!nplayout
     | "simple" -> Simple.solve
     | "naive" -> MCTSutils.solve
-    | _ -> failwith "Wrong solver")
+    | s -> failwith (sprintf "Wrong solver:%s" s))
 
 let get_formula () = 
   let p = D.Parse.from_file () !filename in
