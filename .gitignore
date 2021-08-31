@@ -2,3 +2,4 @@
 _build
 *.swp
 moveall.sh
+__pycache__
