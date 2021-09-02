@@ -95,16 +95,16 @@ let list pr = list' "[" "; " "]" pr
 end
 
 let rec countP p = match p with
-  | D.Formula.Assign(a, psi) -> CSet.add a (countF psi)
-  | D.Formula.ListP(_, l) -> List.fold_right CSet.union (List.map countP l) CSet.empty
-  | D.Formula.Test psi -> countF psi
-  | D.Formula.Kleene p -> countP p
-  | D.Formula.Converse _ -> raise (Not_implem "Converse")
+  | D.Formula.T.Assign(a, psi) -> CSet.add a (countF psi)
+  | D.Formula.T.ListP(_, l) -> List.fold_right CSet.union (List.map countP l) CSet.empty
+  | D.Formula.T.Test psi -> countF psi
+  | D.Formula.T.Kleene p -> countP p
+  | D.Formula.T.Converse _ -> raise (Not_implem "Converse")
 and countF f = match f with
-  | D.Formula.CallF(_, a) ->CSet.singleton a
-  | D.Formula.Base _ -> CSet.empty
-  | D.Formula.ListF(_, l) -> List.fold_right CSet.union(List.map countF l) CSet.empty
-  | D.Formula.Modal(_, p, f) -> CSet.union (countP p) (countF f)
+  | D.Formula.T.CallF(_, a) ->CSet.singleton a
+  | D.Formula.T.Const _ -> CSet.empty
+  | D.Formula.T.ListF(_, l) -> List.fold_right CSet.union(List.map countF l) CSet.empty
+  | D.Formula.T.Modal(_, p, f) -> CSet.union (countP p) (countF f)
 
 let acountF f = CSet.cardinal (countF f)
 let acountP p = CSet.cardinal (countP p)
@@ -122,27 +122,29 @@ n  when n <= 32 -> pow 2 n
   | _ -> max_int
 
 
-let rec formToIForm (f:D.Formula.formula) : iformula = match f with
-  | D.Formula.CallF(b, a) -> let _= if false then eprintf "---> %s %b\n" (D.Circuit.Print.callable a) b in 
+let rec formToIForm (f:D.Formula.T.formula) : iformula = match f with
+  | D.Formula.T.CallF(b, a) -> let _= if false then eprintf "---> %s %b\n" (D.Circuit.Print.callable a) b in 
       let s = D.Circuit.Print.callable a in CallF(b, s)
-  | D.Formula.Base b -> Base b
-  | D.Formula.ListF(op, l) -> ListF(op, List.map formToIForm l)
-  | D.Formula.Modal(b, p, f) -> let fi = formToIForm f in
+  | D.Formula.T.Const D.Ast.T.Top -> Base true
+  | D.Formula.T.Const D.Ast.T.Bot -> Base false
+  | D.Formula.T.ListF(op, l) -> ListF(op, List.map formToIForm l)
+  | D.Formula.T.Modal(mb, p, f) -> let b = mb = D.Ast.T.Diamond in
+                                 let fi = formToIForm f in
     match p with
-    | D.Formula.ListP(D.Ast.T.Seq, xt) ->  (* this isn't working properly obviously TODO *)
+    | D.Formula.T.ListP(D.Ast.T.Seq, xt) ->  (* this isn't working properly obviously TODO *)
         ( match xt with
         | [] -> formToIForm f (* skip.. = <;> *)
         | [h] -> Modal(b, progToIProg h, fi)
-        | h::t -> Modal(b, progToIProg h, formToIForm (D.Formula.Modal(b, ListP(D.Ast.T.Seq, t), f)))
+        | h::t -> Modal(b, progToIProg h, formToIForm (D.Formula.T.Modal(mb, ListP(D.Ast.T.Seq, t), f)))
       )
     | _ -> Modal(b, progToIProg p, fi)
 
-and progToIProg (p:D.Formula.program) : iprogram = match p with
-  | D.Formula.Assign(a, psi) -> Assign(D.Circuit.Print.callable a, formToIForm psi)
-  | D.Formula.ListP(op, l) -> ListP(op, List.map progToIProg l) (*should convert Seq close to above, but not really necessary as we won't use this function directly *)
-  | D.Formula.Test psi -> Test (formToIForm psi)
-  | D.Formula.Kleene p -> LE(twopow (acountP p) , progToIProg p)
-  | D.Formula.Converse _ -> raise (Not_implem "Converse")
+and progToIProg (p:D.Formula.T.program) : iprogram = match p with
+  | D.Formula.T.Assign(a, psi) -> Assign(D.Circuit.Print.callable a, formToIForm psi)
+  | D.Formula.T.ListP(op, l) -> ListP(op, List.map progToIProg l) (*should convert Seq close to above, but not really necessary as we won't use this function directly *)
+  | D.Formula.T.Test psi -> Test (formToIForm psi)
+  | D.Formula.T.Kleene p -> LE(twopow (acountP p) , progToIProg p)
+  | D.Formula.T.Converse _ -> raise (Not_implem "Converse")
 
 let statInit l = {n=0; nwin=0; ntoprove=l}
 let toFormu (v:SS.t) (f:iformula) : arbre = Feuille(Formu(v, f))

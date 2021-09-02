@@ -51,18 +51,19 @@ end
 
 (*** Converting Dlpag's formula to our formula type *)
 (*** current changes : Circuit.callable -> string *)
-let rec formula_retread (old_f:D.Formula.formula) = match old_f with
-  | D.Formula.CallF(b, callable) -> Var(b, D.Circuit.Print.callable callable)
-  | D.Formula.Base b -> Base b
-  | D.Formula.ListF(old_fop, old_lf) -> ListF(fop_retread old_fop, List.map formula_retread old_lf)
-  | D.Formula.Modal(diam, old_p, old_phi) -> Modal(diam, program_retread old_p, formula_retread old_phi)
+let rec formula_retread (old_f:D.Formula.T.formula) = match old_f with
+  | D.Formula.T.CallF(b, callable) -> Var(b, D.Circuit.Print.callable callable)
+  | D.Formula.T.Const D.Ast.T.Top -> Base true
+  | D.Formula.T.Const D.Ast.T.Bot -> Base false
+  | D.Formula.T.ListF(old_fop, old_lf) -> ListF(fop_retread old_fop, List.map formula_retread old_lf)
+  | D.Formula.T.Modal(diam, old_p, old_phi) -> Modal(diam = D.Ast.T.Diamond, program_retread old_p, formula_retread old_phi)
 
-and program_retread (old_p:D.Formula.program) = match old_p with
-  | D.Formula.Test old_psi -> let new_psi = formula_retread old_psi in Test new_psi
-  | D.Formula.ListP(old_pop, old_lp) -> ListP(pop_retread old_pop, List.map program_retread old_lp)
-  | D.Formula.Assign(callable, old_psi) -> Assign(D.Circuit.Print.callable callable, formula_retread old_psi)
-  | D.Formula.Kleene old_p -> Kleene(program_retread old_p)
-  | D.Formula.Converse _ -> failwith "Not implemented"
+and program_retread (old_p:D.Formula.T.program) = match old_p with
+  | D.Formula.T.Test old_psi -> let new_psi = formula_retread old_psi in Test new_psi
+  | D.Formula.T.ListP(old_pop, old_lp) -> ListP(pop_retread old_pop, List.map program_retread old_lp)
+  | D.Formula.T.Assign(callable, old_psi) -> Assign(D.Circuit.Print.callable callable, formula_retread old_psi)
+  | D.Formula.T.Kleene old_p -> Kleene(program_retread old_p)
+  | D.Formula.T.Converse _ -> failwith "Not implemented"
 and fop_retread = function
   | D.Ast.T.Conj -> Conj
   | D.Ast.T.Disj -> Disj
